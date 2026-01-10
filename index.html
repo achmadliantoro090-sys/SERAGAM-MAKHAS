@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MA KHAS KEMPEK v12.2</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Open+Sans:wght@400;600&family=Roboto:wght@500;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root { --primary: #1e293b; --accent: #3b82f6; --bg-body: #f8fafc; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Open Sans', sans-serif; background: var(--bg-body); color: #1e293b; }
+        h1, h2, h3, h4, .font-heading { font-family: 'Montserrat', sans-serif; }
+        .font-data { font-family: 'Roboto', sans-serif; }
+        .sidebar { background: var(--primary); height: 100vh; width: 260px; position: fixed; left: 0; top: 0; z-index: 1000; border-right: 1px solid rgba(255,255,255,0.1); }
+        .main-content { margin-left: 260px; padding: 25px; min-height: 100vh; }
+        .logo-container { padding: 35px 20px; text-align: center; background: rgba(0,0,0,0.2); }
+        .logo-img { width: 80px; height: 80px; margin: 0 auto 15px; background: white; padding: 5px; border-radius: 20px; object-fit: contain; }
+        .nav-link { display: flex; align-items: center; gap: 12px; padding: 14px 20px; color: #94a3b8; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 12px; margin: 4px 15px; transition: 0.3s; }
+        .active-menu { background: var(--accent) !important; color: white !important; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
+        .page-content { display: none; animation: fadeIn 0.4s ease-out; }
+        .page-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        .card { background: white; border-radius: 24px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .table-container { overflow-x: auto; border-radius: 16px; border: 1px solid #e2e8f0; }
+        th { background: #f1f5f9; padding: 15px; font-size: 11px; text-transform: uppercase; color: #64748b; font-family: 'Montserrat', sans-serif; }
+        td { padding: 15px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+        .input-box { width: 100%; padding: 12px 16px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; font-weight: 500; outline: none; }
+        .btn-primary { background: var(--accent); color: white; font-family: 'Montserrat', sans-serif; font-weight: 700; border-radius: 12px; }
+        .btn-excel { width: 100%; text-align: left; color: #cbd5e1; font-size: 11px; font-weight: 600; padding: 10px 20px; border-radius: 8px; }
+        @media (max-width: 1024px) { .sidebar { transform: translateX(-100%); } .sidebar.open { transform: translateX(0); } .main-content { margin-left: 0; } }
+    </style>
+</head>
+<body>
+
+    <aside id="sidebar" class="sidebar">
+        <div class="logo-container" onclick="switchMenu('profil')">
+            <img src="https://i.ibb.co/vYfBfG9/logo-MA-KHAS.png" alt="Logo" class="logo-img">
+            <h3 id="disp-nama" class="text-white font-heading text-base tracking-tight uppercase">MA KHAS KEMPEK</h3>
+            <p id="disp-tag" class="text-blue-400 text-[9px] font-heading font-bold uppercase tracking-widest mt-1">Official Store Pro</p>
+        </div>
+        
+        <nav class="mt-8">
+            <div onclick="switchMenu('dashboard')" id="m-dashboard" class="nav-link active-menu"><i class="fa-solid fa-house-chimney w-5"></i> Dashboard</div>
+            <div onclick="switchMenu('stok')" id="m-stok" class="nav-link"><i class="fa-solid fa-layer-group w-5"></i> Stok Seragam</div>
+            <div onclick="switchMenu('beli')" id="m-beli" class="nav-link"><i class="fa-solid fa-circle-plus w-5"></i> Input Stok</div>
+            <div onclick="switchMenu('jual')" id="m-jual" class="nav-link"><i class="fa-solid fa-cart-shopping w-5"></i> Input Penjualan</div>
+            <div onclick="switchMenu('kurang')" id="m-kurang" class="nav-link"><i class="fa-solid fa-clock-rotate-left w-5"></i> Daftar Kurangan</div>
+        </nav>
+
+        <div class="absolute bottom-0 w-full p-4 bg-[#0f172a]">
+            <p class="text-[9px] font-heading font-bold text-slate-500 mb-2 uppercase px-3">Laporan Excel</p>
+            <button onclick="exportExcel('STOK')" class="btn-excel"><i class="fa-solid fa-file-excel mr-2"></i> Rekap Stok</button>
+            <button onclick="exportExcel('JUAL')" class="btn-excel"><i class="fa-solid fa-receipt mr-2"></i> Rekap Penjualan</button>
+            <button onclick="exportExcel('KURANG')" class="btn-excel"><i class="fa-solid fa-user-tag mr-2"></i> Rekap Kurangan</button>
+            <button onclick="confirmReset()" class="w-full text-center text-red-400 text-[10px] font-bold py-3 mt-2">RESET DATABASE</button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="flex justify-between items-center mb-8 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-1.5 h-6 bg-blue-600 rounded-full"></div>
+                <h2 id="header-title" class="text-sm font-heading font-extrabold text-slate-800 tracking-tight uppercase italic">DASHBOARD</h2>
+            </div>
+            <button onclick="toggleSidebar()" class="lg:hidden text-slate-800"><i class="fa-solid fa-bars-staggered text-xl"></i></button>
+        </header>
+
+        <div id="p-dashboard" class="page-content active">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="card p-8 bg-white">
+                    <p class="text-[11px] font-heading font-bold text-slate-400 uppercase tracking-widest">Total Unit Stok</p>
+                    <h3 id="stat-total" class="text-5xl font-data font-black text-slate-800 mt-2">0</h3>
+                </div>
+                <div class="card p-8 bg-blue-600">
+                    <p class="text-[11px] font-heading font-bold text-blue-100 uppercase tracking-widest">Nilai Aset Stok</p>
+                    <h3 id="stat-nilai" class="text-2xl font-data font-black text-white mt-2">Rp 0</h3>
+                </div>
+                <div class="card p-8 bg-orange-500">
+                    <p class="text-[11px] font-heading font-bold text-orange-100 uppercase tracking-widest">Siswa Kurang</p>
+                    <h3 id="stat-kurang" class="text-5xl font-data font-black text-white mt-2">0</h3>
+                </div>
+            </div>
+            <div class="card p-6">
+                <h4 class="font-heading font-bold text-xs uppercase text-slate-800 mb-6 flex items-center gap-2 italic">Aktivitas Terkini</h4>
+                <div class="table-container"><table><thead><tr><th>Waktu</th><th>Nama</th><th>Item</th><th>Metode</th><th>Status</th></tr></thead><tbody id="log-body" class="font-data"></tbody></table></div>
+            </div>
+        </div>
+
+        <div id="p-stok" class="page-content">
+            <div class="flex gap-4 mb-8">
+                <button onclick="renderStok('PUTRA')" class="flex-1 bg-slate-800 text-white font-heading font-bold py-4 rounded-2xl text-xs uppercase">UNIT PUTRA</button>
+                <button onclick="renderStok('PUTRI')" class="flex-1 bg-blue-600 text-white font-heading font-bold py-4 rounded-2xl text-xs uppercase">UNIT PUTRI</button>
+            </div>
+            <div id="stok-display" class="space-y-6"></div>
+        </div>
+
+        <div id="p-beli" class="page-content">
+            <div class="max-w-xl mx-auto card p-10 border-t-4 border-blue-600">
+                <h4 class="text-center font-heading font-bold text-xl text-slate-800 uppercase mb-8 italic">Input Stok Masuk</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <select id="in-cat" onchange="updateItems('in')" class="input-box"></select>
+                    <select id="in-size" class="input-box"></select>
+                </div>
+                <select id="in-item" class="input-box mt-5"></select>
+                <div class="grid grid-cols-2 gap-5 mt-5">
+                    <input id="in-qty" type="number" placeholder="Jumlah" class="input-box">
+                    <input id="in-price" type="number" placeholder="Harga Jual" class="input-box">
+                </div>
+                <button onclick="submitStok()" class="w-full mt-10 btn-primary py-5 uppercase shadow-xl">Simpan Ke Stok</button>
+            </div>
+        </div>
+
+        <div id="p-jual" class="page-content">
+            <div class="max-w-xl mx-auto card p-10 border-t-4 border-blue-600">
+                <h4 class="text-center font-heading font-bold text-xl text-slate-800 uppercase mb-8 italic">Input Penjualan</h4>
+                <input id="out-nama" type="text" placeholder="NAMA LENGKAP SISWA" class="input-box text-center uppercase font-bold text-lg mb-5">
+                <div class="grid grid-cols-2 gap-5 mb-5">
+                    <select id="out-cat" onchange="updateItems('out')" class="input-box"></select>
+                    <select id="out-size" onchange="checkLive()" class="input-box"></select>
+                </div>
+                <select id="out-item" onchange="checkLive()" class="input-box mb-6"></select>
+                <div class="flex gap-3 mb-8">
+                    <button onclick="setPay('CASH')" id="pay-cash" class="pay-btn flex-1 py-4 rounded-xl font-heading font-bold text-xs bg-blue-600 text-white">CASH</button>
+                    <button onclick="setPay('SIMAK')" id="pay-simak" class="pay-btn flex-1 py-4 rounded-xl font-heading font-bold text-xs bg-slate-100 text-slate-600">APP SIMAK</button>
+                </div>
+                <div class="bg-slate-900 p-8 rounded-3xl flex justify-between items-center mb-8">
+                    <span class="text-slate-400 font-heading font-bold text-xs">SISA STOK GUDANG:</span>
+                    <h5 id="live-stok" class="text-5xl font-data font-black text-white">0</h5>
+                </div>
+                <button onclick="prosesJual()" class="w-full btn-primary py-5 uppercase shadow-xl">Proses Transaksi</button>
+            </div>
+        </div>
+
+        <div id="p-kurang" class="page-content">
+            <div class="card p-8 border-l-4 border-orange-500 mb-8">
+                <h4 class="font-heading font-bold text-sm text-slate-800 uppercase mb-6 italic">Tambah Kurangan Manual</h4>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <input id="man-nama" type="text" placeholder="Nama Siswa" class="input-box uppercase">
+                    <select id="man-cat" onchange="updateItems('man')" class="input-box"></select>
+                    <select id="man-item" class="input-box"></select>
+                    <select id="man-size" class="input-box"></select>
+                </div>
+                <div class="flex gap-4 mt-6 items-center">
+                    <select id="man-pay" class="input-box w-1/4">
+                        <option value="CASH">CASH</option>
+                        <option value="SIMAK">SIMAK</option>
+                    </select>
+                    <button onclick="inputKurangManual()" class="flex-1 btn-primary bg-orange-600 py-3 text-xs uppercase">Catat Antrean</button>
+                </div>
+            </div>
+            <div class="card p-6">
+                <h4 class="font-heading font-bold text-xs uppercase text-slate-800 mb-6 italic">Tabel Daftar Kurangan</h4>
+                <div class="table-container"><table><thead><tr><th>Nama Siswa</th><th>Item Barang</th><th>Size</th><th>Metode</th><th>Aksi</th></tr></thead><tbody id="kurang-body" class="font-data"></tbody></table></div>
+            </div>
+        </div>
+
+        <div id="p-profil" class="page-content">
+            <div class="max-w-md mx-auto card p-10">
+                <h4 class="font-heading font-bold text-center text-lg uppercase mb-8 italic">Pengaturan Profil</h4>
+                <div class="space-y-5">
+                    <input id="p-name" type="text" class="input-box" placeholder="Nama Toko">
+                    <input id="p-tag" type="text" class="input-box" placeholder="Tagline">
+                    <button onclick="saveProf()" class="w-full btn-primary py-5 uppercase">Simpan Profil</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const sizes = ["S", "M", "L", "XL", "XXL", "3XL", "4XL", "5XL"];
+        const items = {
+            PUTRA: ["Baju Pramuka Pa", "Baju Putih Pa", "Baju Batik Pa", "Celana Abu", "Celana Hitam", "Celana Pramuka"],
+            PUTRI: ["Baju Pramuka Pi", "Baju Putih Pi", "Baju Batik Pi", "Rok Abu", "Rok Hitam", "Rok Pramuka"]
+        };
+
+        let db = JSON.parse(localStorage.getItem('ma_db_v122')) || { PUTRA: {}, PUTRI: {} };
+        let logs = JSON.parse(localStorage.getItem('ma_lg_v122')) || [];
+        let kurangan = JSON.parse(localStorage.getItem('ma_kr_v122')) || [];
+        let prices = JSON.parse(localStorage.getItem('ma_pr_v122')) || {};
+        let config = JSON.parse(localStorage.getItem('ma_cf_v122')) || { n: "MA KHAS KEMPEK", t: "OFFICIAL STORE PRO" };
+        let payType = 'CASH';
+
+        function init() {
+            document.getElementById('disp-nama').innerText = config.n;
+            document.getElementById('disp-tag').innerText = config.t;
+            document.getElementById('p-name').value = config.n;
+            document.getElementById('p-tag').value = config.t;
+            ['PUTRA', 'PUTRI'].forEach(c => items[c].forEach(i => {
+                if(!db[c][i]) db[c][i] = {};
+                sizes.forEach(s => { if(db[c][i][s] === undefined) db[c][i][s] = 0; });
+            }));
+            ['in', 'out', 'man'].forEach(pre => {
+                const catEl = document.getElementById(pre + '-cat');
+                if(catEl) {
+                    catEl.innerHTML = '<option value="PUTRA">PUTRA</option><option value="PUTRI">PUTRI</option>';
+                    updateItems(pre);
+                    document.getElementById(pre + '-size').innerHTML = sizes.map(s => `<option value="${s}">${s}</option>`).join('');
+                }
+            });
+            updateDash();
+        }
+
+        function switchMenu(id) {
+            document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active-menu'));
+            document.getElementById('p-' + id).classList.add('active');
+            if(id !== 'profil') document.getElementById('m-' + id).classList.add('active-menu');
+            let titleMap = { 'stok':'Stok Seragam', 'jual':'Input Penjualan', 'kurang':'Daftar Kurangan', 'beli':'Input Stok', 'dashboard':'Dashboard' };
+            document.getElementById('header-title').innerText = (titleMap[id] || id).toUpperCase();
+            if(id === 'stok') renderStok('PUTRA');
+            if(id === 'kurang') renderKurang();
+            updateDash();
+            if(window.innerWidth < 1024) toggleSidebar();
+        }
+
+        function updateItems(pre) {
+            const cat = document.getElementById(pre + '-cat').value;
+            document.getElementById(pre + '-item').innerHTML = items[cat].map(i => `<option value="${i}">${i}</option>`).join('');
+            if(pre === 'out') checkLive();
+        }
+
+        function inputKurangManual() {
+            const n = document.getElementById('man-nama').value, c = document.getElementById('man-cat').value,
+                  i = document.getElementById('man-item').value, s = document.getElementById('man-size').value, p = document.getElementById('man-pay').value;
+            if(!n) return alert("Isi Nama!");
+            kurangan.push({ n: n.toUpperCase(), c, i, s, p, d: new Date().toLocaleDateString() });
+            save(); alert("Kurangan Berhasil Dicatat!");
+            document.getElementById('man-nama').value = ""; renderKurang();
+        }
+
+        function submitStok() {
+            const c = document.getElementById('in-cat').value, i = document.getElementById('in-item').value,
+                  s = document.getElementById('in-size').value, q = parseInt(document.getElementById('in-qty').value), p = parseInt(document.getElementById('in-price').value);
+            if(!q) return alert("Isi Jumlah!");
+            db[c][i][s] += q; if(p) prices[i] = p;
+            logs.unshift({ t: new Date().toLocaleTimeString(), n: "STOK MASUK", i: i + " ("+s+")", p: "-", s: "MASUK" });
+            save(); alert("Stok Berhasil Masuk!");
+            document.getElementById('in-qty').value = "";
+        }
+
+        function prosesJual() {
+            const n = document.getElementById('out-nama').value, c = document.getElementById('out-cat').value,
+                  i = document.getElementById('out-item').value, s = document.getElementById('out-size').value;
+            if(!n) return alert("Isi Nama Siswa!");
+            if(db[c][i][s] <= 0) {
+                if(confirm("Stok Kosong! Masukkan ke Daftar Kurangan?")) {
+                    kurangan.push({ n: n.toUpperCase(), c, i, s, p: payType, d: new Date().toLocaleDateString() }); save();
+                } return;
+            }
+            db[c][i][s]--;
+            logs.unshift({ t: new Date().toLocaleTimeString(), n: n.toUpperCase(), i: i+" ("+s+")", p: payType, s: "JUAL" });
+            save(); alert("Transaksi Berhasil!");
+            document.getElementById('out-nama').value = ""; checkLive();
+        }
+
+        function renderKurang() {
+            document.getElementById('kurang-body').innerHTML = kurangan.map((k, idx) => `
+                <tr><td class="font-bold uppercase text-orange-600">${k.n}</td><td>${k.i}</td><td class="font-black">${k.s}</td><td>${k.p}</td>
+                <td><button onclick="lunas(${idx})" class="bg-blue-600 text-white px-5 py-2 rounded-lg text-[10px] font-heading font-bold">LUNASKAN</button></td></tr>`).join('');
+        }
+
+        function lunas(idx) {
+            const k = kurangan[idx];
+            if(db[k.c][k.i][k.s] <= 0) return alert("Gagal! Stok masih kosong.");
+            db[k.c][k.i][k.s]--;
+            logs.unshift({ t: new Date().toLocaleTimeString(), n: k.n, i: k.i+" ("+k.s+")", p: k.p, s: "LUNAS" });
+            kurangan.splice(idx, 1); save(); renderKurang();
+        }
+
+        function renderStok(cat) {
+            const container = document.getElementById('stok-display'); container.innerHTML = "";
+            Object.keys(db[cat]).forEach(itm => {
+                let grid = sizes.map(s => `<div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-center"><p class="text-[9px] font-heading font-bold text-slate-400">${s}</p><input type="number" onchange="updStok('${cat}','${itm}','${s}',this.value)" value="${db[cat][itm][s]}" class="w-full text-center font-data font-black text-slate-800 bg-transparent"></div>`).join('');
+                container.innerHTML += `<div class="card p-6"><div class="flex justify-between items-center mb-4"><h6 class="font-heading font-bold text-slate-800 text-sm uppercase">${itm}</h6><span class="font-data font-bold text-blue-600">Rp ${(prices[itm]||0).toLocaleString()}</span></div><div class="grid grid-cols-4 md:grid-cols-8 gap-3">${grid}</div></div>`;
+            });
+        }
+
+        function updateDash() {
+            let total = 0, aset = 0;
+            ['PUTRA','PUTRI'].forEach(c => Object.keys(db[c]).forEach(i => sizes.forEach(s => { total += db[c][i][s]; aset += (db[c][i][s] * (prices[i]||0)); })));
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-nilai').innerText = "Rp " + aset.toLocaleString('id-ID');
+            document.getElementById('stat-kurang').innerText = kurangan.length;
+            document.getElementById('log-body').innerHTML = logs.slice(0, 8).map(l => `<tr><td class="text-xs text-slate-400">${l.t}</td><td class="uppercase font-bold">${l.n}</td><td class="text-xs">${l.i}</td><td class="text-xs">${l.p}</td><td><span class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[10px] font-bold">${l.s}</span></td></tr>`).join('');
+        }
+
+        function updStok(c,i,s,v) { db[c][i][s] = parseInt(v)||0; save(); }
+        function setPay(t) { payType = t; document.querySelectorAll('.pay-btn').forEach(b => { b.classList.remove('bg-blue-600','text-white'); b.classList.add('bg-slate-100','text-slate-600'); }); document.getElementById('pay-'+t.toLowerCase()).classList.replace('bg-slate-100','bg-blue-600'); document.getElementById('pay-'+t.toLowerCase()).classList.replace('text-slate-600','text-white'); }
+        function checkLive() { const c = document.getElementById('out-cat').value, i = document.getElementById('out-item').value, s = document.getElementById('out-size').value; document.getElementById('live-stok').innerText = db[c][i][s] || 0; }
+        function save() { localStorage.setItem('ma_db_v122', JSON.stringify(db)); localStorage.setItem('ma_lg_v122', JSON.stringify(logs)); localStorage.setItem('ma_kr_v122', JSON.stringify(kurangan)); localStorage.setItem('ma_pr_v122', JSON.stringify(prices)); updateDash(); }
+        function saveProf() { config = { n: document.getElementById('p-name').value, t: document.getElementById('p-tag').value }; localStorage.setItem('ma_cf_v122', JSON.stringify(config)); location.reload(); }
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+        function confirmReset() { if(confirm("Hapus semua data permanen?")) { localStorage.clear(); location.reload(); } }
+
+        function exportExcel(type) {
+            let data = [];
+            if(type === 'STOK') {
+                ['PUTRA','PUTRI'].forEach(c => Object.keys(db[c]).forEach(itm => {
+                    let r = { Kategori: c, Barang: itm, Harga: prices[itm] || 0 };
+                    sizes.forEach(s => r[s] = db[c][itm][s]); data.push(r);
+                }));
+            } else if(type === 'JUAL') {
+                data = logs.map(l => ({ Waktu: l.t, Nama: l.n, Item: l.i, Bayar: l.p, Status: l.s }));
+            } else if(type === 'KURANG') {
+                data = kurangan.map(k => ({ Tgl: k.d, Nama: k.n, Item: k.i, Size: k.s, Bayar: k.p }));
+            }
+            const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Laporan"); XLSX.writeFile(wb, `REKAP_${type}_MA_KHAS.xlsx`);
+        }
+        window.onload = init;
+    </script>
+</body>
+</html>
