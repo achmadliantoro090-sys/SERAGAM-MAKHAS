@@ -3,296 +3,311 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MA KHAS KEMPEK v13.7 - STOK SERAGAM</title>
+    <title>SISTEM DATA SERAGAM</title>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
-        :root { --primary: #064e3b; --accent: #10b981; --bg-body: #f0fdf4; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Open Sans', sans-serif; background: var(--bg-body); color: #064e3b; }
-        .font-heading { font-family: 'Montserrat', sans-serif; }
-        .sidebar { background: var(--primary); height: 100vh; width: 260px; position: fixed; left: 0; top: 0; z-index: 1000; }
-        .main-content { margin-left: 260px; padding: 25px; min-height: 100vh; }
-        .logo-container { padding: 30px 20px; text-align: center; background: rgba(0,0,0,0.2); }
-        .logo-img { width: 85px; height: 85px; background: white; padding: 5px; border-radius: 18px; object-fit: contain; margin: 0 auto 15px; display: block; }
-        .nav-link { display: flex; align-items: center; gap: 12px; padding: 14px 20px; color: #a7f3d0; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 12px; margin: 4px 15px; }
-        .active-menu { background: var(--accent) !important; color: white !important; }
-        .page-content { display: none; animation: fadeIn 0.3s ease; }
-        .page-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .card { background: white; border-radius: 24px; border: 1px solid #d1fae5; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .input-box { width: 100%; padding: 12px 16px; background: #f9fafb; border: 2px solid #d1fae5; border-radius: 12px; outline: none; }
-        .btn-rekap { width: 100%; text-align: left; color: #a7f3d0; font-size: 11px; font-weight: 700; padding: 12px 20px; border-top: 1px solid rgba(255,255,255,0.05); }
-        .btn-rekap:hover { background: rgba(255,255,255,0.1); color: white; }
-        #modal-filter { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; padding: 20px; }
-        .modal-card { background: white; width: 100%; max-width: 350px; border-radius: 24px; padding: 25px; }
-        @media (max-width: 1024px) { .sidebar { transform: translateX(-100%); transition: 0.3s; } .sidebar.open { transform: translateX(0); } .main-content { margin-left: 0; } }
+        :root { --primary: #064e3b; --primary-dark: #022c22; --accent: #10b981; --bg-body: #f1f5f9; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-body); color: #1e293b; margin: 0; overflow-x: hidden; }
+        #login-overlay { position: fixed; inset: 0; background: radial-gradient(circle at top right, #065f46, #022c22); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .login-card { background: rgba(255, 255, 255, 0.95); padding: 40px; border-radius: 32px; width: 100%; max-width: 400px; text-align: center; backdrop-filter: blur(10px); }
+        .sidebar { background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%); height: 100vh; width: 260px; position: fixed; left: 0; top: 0; z-index: 1000; }
+        .main-content { margin-left: 260px; padding: 30px; min-height: 100vh; }
+        .card { background: white; border-radius: 20px; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); }
+        .nav-link { display: flex; align-items: center; gap: 12px; padding: 12px 20px; color: #d1fae5; font-size: 14px; font-weight: 500; cursor: pointer; border-radius: 12px; margin: 4px 15px; }
+        .active-menu { background: var(--accent) !important; color: white !important; font-weight: 700; }
+        .input-box { width: 100%; padding: 12px 16px; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; outline: none; }
+        .btn-primary { background: var(--primary); color: white; padding: 14px; border-radius: 14px; font-weight: 700; cursor: pointer; border: none; }
+        .page-content { display: none; }
+        .page-content.active { display: block; animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .rekap-icon-btn { transition: all 0.3s; cursor: pointer; border: 2px solid transparent; }
+        .rekap-icon-btn:hover { border-color: var(--accent); transform: translateY(-5px); background: #f0fdf4; }
+        @media (max-width: 768px) { .sidebar { transform: translateX(-100%); } .main-content { margin-left: 0; padding: 15px; } }
     </style>
 </head>
 <body>
 
-    <div id="modal-filter">
-        <div class="modal-card">
-            <h4 id="modal-title" class="font-heading font-black text-emerald-900 mb-1 uppercase italic text-sm">REKAP</h4>
-            <p class="text-[10px] text-slate-400 mb-6 font-bold uppercase tracking-widest">Tentukan Rentang Tanggal</p>
-            <div class="space-y-4">
-                <div>
-                    <label class="text-[9px] font-black text-slate-400 uppercase ml-1">Tanggal Mulai</label>
-                    <input id="date-start" type="date" class="input-box text-sm">
-                </div>
-                <div>
-                    <label class="text-[9px] font-black text-slate-400 uppercase ml-1">Tanggal Sampai</label>
-                    <input id="date-end" type="date" class="input-box text-sm">
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-3 mt-8">
-                <button onclick="closeModal()" class="py-3 bg-slate-100 text-slate-500 rounded-xl font-bold text-[10px] uppercase">Batal</button>
-                <button onclick="processDownload()" class="py-3 bg-emerald-600 text-white rounded-xl font-bold text-[10px] uppercase shadow-lg">Download</button>
+    <div id="login-overlay">
+        <div class="login-card">
+            <div class="w-20 h-20 bg-white rounded-2xl mx-auto mb-4 p-2 flex items-center justify-center"><img id="login-img-display" src="" class="object-contain max-h-full"></div>
+            <h2 class="text-xl font-black text-emerald-900 mb-6 uppercase tracking-tight">SISTEM DATA SERAGAM</h2>
+            <div class="space-y-3">
+                <input id="u-log" type="text" placeholder="USERNAME" class="input-box text-center font-bold uppercase">
+                <input id="p-log" type="password" placeholder="PASSWORD" class="input-box text-center font-bold">
+                <button onclick="cekLogin()" class="w-full btn-primary mt-2">MASUK</button>
             </div>
         </div>
     </div>
 
-    <aside id="sidebar" class="sidebar">
-        <div class="logo-container">
-            <img id="img-display" src="https://via.placeholder.com/150?text=LOGO" class="logo-img">
-            <h3 id="disp-nama" class="text-white font-heading text-sm uppercase italic font-black">MA KHAS KEMPEK</h3>
-            <p id="disp-tag" class="text-emerald-300 text-[9px] font-heading font-bold uppercase mt-1 italic">Official Store</p>
+    <aside class="sidebar flex flex-col">
+        <div class="p-8 text-center">
+            <div class="bg-white/10 p-4 rounded-[30px] mb-4">
+                <img id="side-img" src="" class="w-16 h-16 bg-white rounded-2xl mx-auto mb-3 p-1 object-contain">
+                <h3 id="disp-nama" class="text-white font-extrabold text-[11px] uppercase">...</h3>
+                <span id="role-badge" class="inline-block mt-2 px-3 py-0.5 bg-emerald-400 text-emerald-950 text-[9px] font-black rounded-full uppercase">...</span>
+            </div>
         </div>
-        
-        <nav class="mt-4">
-            <div onclick="switchMenu('dashboard')" id="m-dashboard" class="nav-link active-menu"><i class="fa-solid fa-house-chimney w-5"></i> Dashboard</div>
-            <div onclick="switchMenu('stok')" id="m-stok" class="nav-link"><i class="fa-solid fa-boxes-stacked w-5"></i> Stok Seragam</div>
-            <div onclick="switchMenu('beli')" id="m-beli" class="nav-link"><i class="fa-solid fa-plus-circle w-5"></i> Tambah Stok</div>
-            <div onclick="switchMenu('jual')" id="m-jual" class="nav-link"><i class="fa-solid fa-cart-shopping w-5"></i> Penjualan</div>
-            <div onclick="switchMenu('kurang')" id="m-kurang" class="nav-link"><i class="fa-solid fa-clock-rotate-left w-5"></i> Daftar Kurangan</div>
-            <div onclick="switchMenu('profil')" id="m-profil" class="nav-link"><i class="fa-solid fa-gears w-5"></i> Pengaturan</div>
+        <nav class="flex-grow">
+            <div onclick="switchMenu('dashboard')" class="nav-link active-menu" id="m-dashboard"><i class="fa-solid fa-chart-pie"></i> Dashboard</div>
+            <div onclick="switchMenu('stok')" class="nav-link" id="m-stok"><i class="fa-solid fa-boxes-stacked"></i> Stok Seragam</div>
+            <div onclick="switchMenu('beli')" class="nav-link" id="m-beli"><i class="fa-solid fa-plus-circle"></i> Tambah Stok</div>
+            <div onclick="switchMenu('jual')" class="nav-link" id="m-jual"><i class="fa-solid fa-cart-shopping"></i> Penjualan</div>
+            <div onclick="switchMenu('kurang')" class="nav-link" id="m-kurang"><i class="fa-solid fa-clock-rotate-left"></i> Kurangan</div>
+            <div onclick="switchMenu('rekap')" class="nav-link" id="m-rekap"><i class="fa-solid fa-file-invoice"></i> Rekap Data</div>
+            <div onclick="switchMenu('config')" class="nav-link" id="m-config"><i class="fa-solid fa-gear"></i> Pengaturan</div>
         </nav>
-
-        <div class="absolute bottom-0 w-full bg-[#042f24] pt-2">
-            <button onclick="openExport('PENJUALAN')" class="btn-rekap"><i class="fa-solid fa-file-export mr-3"></i> REKAP PENJUALAN</button>
-            <button onclick="openExport('KURANGAN')" class="btn-rekap"><i class="fa-solid fa-file-circle-exclamation mr-3"></i> REKAP KURANGAN</button>
-            <button onclick="downloadStok()" class="btn-rekap"><i class="fa-solid fa-box-archive mr-3"></i> REKAP STOK SERAGAM</button>
-        </div>
+        <div class="p-6"><div onclick="logout()" class="nav-link text-red-300"><i class="fa-solid fa-power-off"></i> Keluar</div></div>
     </aside>
 
     <main class="main-content">
-        <header class="flex justify-between items-center mb-8 bg-white p-6 rounded-3xl border border-emerald-100 shadow-sm">
-            <h2 id="header-title" class="text-sm font-heading font-extrabold text-emerald-900 uppercase italic">DASHBOARD</h2>
-            <button onclick="toggleSidebar()" class="lg:hidden text-emerald-900"><i class="fa-solid fa-bars-staggered text-xl"></i></button>
-        </header>
+        <header class="flex justify-between items-center mb-8 bg-white p-6 rounded-[25px] shadow-sm"><h2 id="header-title" class="font-extrabold text-emerald-900 uppercase">DASHBOARD</h2></header>
 
         <div id="p-dashboard" class="page-content active">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div class="card p-8 border-l-8 border-emerald-500">
-                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Total Stok Seragam</p>
-                    <h3 id="stat-total" class="text-5xl font-black text-emerald-900 mt-2">0</h3>
-                </div>
-                <div class="card p-8 bg-emerald-600 text-white shadow-lg">
-                    <p class="text-[11px] font-bold text-emerald-100 uppercase tracking-widest">Siswa Belum Terima</p>
-                    <h3 id="stat-kurang" class="text-5xl font-black mt-2">0</h3>
-                </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="card p-6 border-l-[6px] border-emerald-500"><p class="text-[10px] font-bold text-slate-400 mb-1">TOTAL STOK</p><h3 id="stat-total" class="text-4xl font-black">0</h3></div>
+                <div class="card p-6 border-l-[6px] border-blue-500"><p class="text-[10px] font-bold text-slate-400 mb-1">PENJUALAN</p><h3 id="stat-jual" class="text-4xl font-black">0</h3></div>
+                <div class="card p-6 border-l-[6px] border-orange-500"><p class="text-[10px] font-bold text-slate-400 mb-1">KURANGAN</p><h3 id="stat-kurang" class="text-4xl font-black">0</h3></div>
             </div>
-            <div class="card p-8"><h4 class="font-heading font-bold text-xs uppercase text-emerald-900 mb-6">Aktivitas Terakhir</h4><div id="activity-log" class="space-y-4"></div></div>
+            <div class="card p-8"><input type="text" id="log-search" onkeyup="renderLogs()" placeholder="Cari Log..." class="input-box !py-2 !w-64 !text-xs mb-4"><div id="activity-log" class="space-y-3"></div></div>
         </div>
 
         <div id="p-stok" class="page-content">
             <div class="flex gap-4 mb-8">
-                <button onclick="renderStok('PUTRA')" class="flex-1 bg-emerald-900 text-white font-heading font-bold py-4 rounded-2xl text-[10px] uppercase">SERAGAM PUTRA</button>
-                <button onclick="renderStok('PUTRI')" class="flex-1 bg-emerald-500 text-white font-heading font-bold py-4 rounded-2xl text-[10px] uppercase">SERAGAM PUTRI</button>
+                <button onclick="renderStok('PUTRA')" id="btn-stok-pa" class="flex-1 p-4 rounded-2xl font-bold border uppercase">Putra</button>
+                <button onclick="renderStok('PUTRI')" id="btn-stok-pi" class="flex-1 p-4 rounded-2xl font-bold border uppercase">Putri</button>
             </div>
-            <div id="stok-display" class="space-y-6"></div>
+            <div id="stok-list" class="space-y-6"></div>
+        </div>
+
+        <div id="p-beli" class="page-content">
+            <div class="card p-10 max-w-xl mx-auto">
+                <h3 class="font-black mb-8 text-emerald-900 uppercase text-center">Tambah Stok</h3>
+                <div class="space-y-4">
+                    <select id="in-cat" onchange="updateItems('in')" class="input-box font-bold"></select>
+                    <select id="in-item" class="input-box font-semibold"></select>
+                    <div class="grid grid-cols-2 gap-4"><select id="in-size" class="input-box font-bold"></select><input id="in-qty" type="number" placeholder="Jumlah" class="input-box text-center font-bold"></div>
+                    <input id="in-harga" type="number" placeholder="Harga Jual" class="input-box font-black text-xl text-emerald-700">
+                    <button onclick="submitStok()" class="w-full btn-primary h-14 mt-4">SIMPAN</button>
+                </div>
+            </div>
         </div>
 
         <div id="p-jual" class="page-content">
-            <div class="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div class="card p-8 border-t-4 border-emerald-500 shadow-xl">
-                    <input id="out-nama" type="text" placeholder="NAMA SISWA" class="input-box font-bold uppercase mb-4">
-                    <div class="flex gap-2 mb-6">
-                        <button onclick="setPay('CASH')" id="pay-cash" class="pay-btn flex-1 py-3 rounded-xl font-bold text-[10px] bg-emerald-600 text-white">CASH</button>
-                        <button onclick="setPay('SIMAK')" id="pay-simak" class="pay-btn flex-1 py-3 rounded-xl font-bold text-[10px] bg-white text-emerald-600 border border-emerald-100">SIMAK</button>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                    <div class="card p-8 mb-6">
+                        <div class="grid grid-cols-2 gap-4 mb-4"><input id="out-nama" type="text" placeholder="NAMA SISWA" class="input-box font-bold uppercase"><input id="out-kelas" type="text" placeholder="KELAS" class="input-box font-bold uppercase"></div>
+                        <div class="grid grid-cols-2 gap-4 mb-4"><select id="out-cat" onchange="updateItems('out')" class="input-box font-bold"></select><select id="out-size" onchange="checkLive()" class="input-box font-bold"></select></div>
+                        <select id="out-item" onchange="checkLive()" class="input-box mb-6 font-semibold"></select>
+                        <div class="flex justify-between items-center bg-slate-50 p-6 rounded-2xl border">
+                            <div><p class="text-[10px] text-slate-400 font-bold uppercase">STOK | HARGA</p><span class="text-2xl font-black text-emerald-600"><span id="live-stok">0</span> pcs</span><div id="live-harga" class="text-sm font-bold text-slate-500 mt-1">Rp 0</div></div>
+                            <button onclick="addToCart()" class="btn-primary px-10">+ Keranjang</button>
+                        </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-3 mb-3">
-                        <select id="out-cat" onchange="updateItems('out')" class="input-box font-bold text-xs"></select>
-                        <select id="out-size" onchange="checkLive()" class="input-box font-bold text-xs"></select>
-                    </div>
-                    <select id="out-item" onchange="checkLive()" class="input-box mb-4 font-bold text-xs"></select>
-                    <div class="flex justify-between items-center bg-emerald-50 p-4 rounded-xl">
-                        <span class="text-[10px] font-bold uppercase">Tersedia: <b id="live-stok" class="text-lg ml-1">0</b></span>
-                        <button onclick="addToCart()" class="bg-emerald-900 text-white px-6 py-2 rounded-lg font-bold text-[10px] uppercase">Tambah</button>
+                    <div id="cart-box" class="card p-8 bg-emerald-900 text-white hidden">
+                        <div id="cart-list" class="space-y-3 mb-6"></div>
+                        <div class="flex justify-between items-center mb-6 pt-4 border-t border-white/20"><span class="font-bold uppercase">Total:</span><span id="cart-total" class="text-2xl font-black">Rp 0</span></div>
+                        <button onclick="prosesJual()" class="w-full bg-emerald-400 text-emerald-950 py-4 rounded-xl font-black uppercase">Selesaikan & Cetak Struk</button>
                     </div>
                 </div>
-                <div class="card p-8 bg-emerald-900 text-white shadow-xl"><div id="cart-list" class="space-y-3 mb-8 min-h-[150px]"></div><button onclick="prosesJualMulti()" id="btn-proses" class="w-full bg-emerald-400 text-emerald-950 py-4 rounded-xl font-black uppercase text-[10px] hidden">Simpan Data</button></div>
+                <div>
+                    <div class="card p-6 h-full flex flex-col">
+                        <div class="flex justify-between items-center mb-4"><h4 class="font-black uppercase text-emerald-900">Daftar Pembeli</h4><input type="text" id="pembeli-search" onkeyup="renderPembeliTable()" placeholder="Cari..." class="input-box !py-1 !text-[10px] !w-32"></div>
+                        <div class="overflow-y-auto flex-grow max-h-[400px]"><table class="w-full text-[10px]"><thead class="bg-slate-50 sticky top-0"><tr><th class="p-2 text-left">SISWA</th><th class="p-2 text-left">KELAS</th><th class="p-2 text-left">ITEM</th></tr></thead><tbody id="pembeli-list"></tbody></table></div>
+                    </div>
+                </div>
             </div>
         </div>
 
         <div id="p-kurang" class="page-content">
-            <div class="card p-8 mb-8 border-l-4 border-emerald-500 shadow-md">
-                <input id="man-nama" type="text" placeholder="NAMA SISWA" class="input-box font-bold uppercase mb-4">
-                <div class="grid grid-cols-2 gap-4 mb-4"><select id="man-cat" onchange="renderMultiItems()" class="input-box font-bold text-xs"></select><select id="man-size" class="input-box font-bold text-xs"></select></div>
-                <div id="multi-item-container" class="flex flex-wrap gap-2 mb-4"></div>
-                <button onclick="submitKurangMulti()" class="w-full btn-primary py-4 uppercase text-[10px]">Catat Kurangan</button>
+            <div class="card p-8 mb-8 border-t-4 border-orange-500">
+                <div class="grid grid-cols-2 gap-4 mb-4"><input id="kur-nama" type="text" placeholder="NAMA SISWA" class="input-box font-bold uppercase"><input id="kur-kelas" type="text" placeholder="KELAS" class="input-box font-bold uppercase"></div>
+                <div class="grid grid-cols-2 gap-4 mb-4"><select id="kur-cat" onchange="updateItems('kur')" class="input-box font-bold"></select><select id="kur-size" class="input-box font-bold"></select></div>
+                <div id="kur-items-grid" class="flex flex-wrap gap-2 mb-8"></div>
+                <button onclick="submitKurangMulti()" class="w-full bg-orange-600 text-white py-4 rounded-xl font-black uppercase">Simpan Kurangan</button>
             </div>
-            <div class="card p-4 overflow-x-auto"><table class="w-full text-left text-sm"><thead><tr class="bg-emerald-50 text-[9px] uppercase font-black text-emerald-700"><th class="p-4">Nama Siswa</th><th class="p-4">Barang</th><th class="p-4 text-right">Opsi</th></tr></thead><tbody id="kurang-body" class="font-bold"></tbody></table></div>
-        </div>
-
-        <div id="p-beli" class="page-content">
-            <div class="max-w-xl mx-auto card p-10 border-t-4 border-emerald-500 shadow-xl">
-                <div class="grid grid-cols-2 gap-4 mb-4"><select id="in-cat" onchange="updateItems('in')" class="input-box font-bold text-xs"></select><select id="in-size" class="input-box font-bold text-xs"></select></div>
-                <select id="in-item" class="input-box mb-6 font-bold text-xs"></select>
-                <input id="in-qty" type="number" placeholder="JUMLAH UNIT" class="input-box mb-6 font-bold">
-                <button onclick="submitStok()" class="w-full btn-primary py-4 uppercase text-[10px]">Update Stok Seragam</button>
+            <div class="card p-6">
+                <div class="flex justify-between items-center mb-4"><h4 class="font-black uppercase text-orange-900">Data Kurangan</h4><input type="text" id="kurang-search" onkeyup="renderKurangTable()" placeholder="Cari Siswa/Kelas..." class="input-box !py-1 !text-[10px] !w-48"></div>
+                <div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="text-slate-400 text-left border-b"><th class="p-4">SISWA</th><th class="p-4">KELAS</th><th class="p-4">BARANG</th><th class="p-4 text-center">AKSI</th></tr></thead><tbody id="kurang-table"></tbody></table></div>
             </div>
         </div>
 
-        <div id="p-profil" class="page-content">
-            <div class="max-w-md mx-auto card p-10 text-center">
-                <input id="file-logo" type="file" accept="image/*" class="hidden" onchange="uploadFoto(this)">
-                <button onclick="document.getElementById('file-logo').click()" class="text-[10px] font-bold text-emerald-600 mb-6 block underline uppercase tracking-widest">Ganti Logo</button>
-                <input id="p-name" type="text" class="input-box mb-4" placeholder="Nama Sekolah">
-                <input id="p-tag" type="text" class="input-box mb-6" placeholder="Tagline">
-                <button onclick="saveProf()" class="w-full btn-primary py-4 uppercase text-[10px]">Simpan Perubahan</button>
-                <button onclick="resetHanyaStok()" class="w-full mt-10 bg-red-50 text-red-700 py-3 rounded-xl font-bold uppercase text-[9px]">Kosongkan Semua Stok</button>
+        <div id="p-rekap" class="page-content">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                <div onclick="showRekapPanel('JUAL')" class="rekap-icon-btn card p-8 text-center"><i class="fa-solid fa-cart-arrow-down text-5xl text-blue-500 mb-4"></i><p class="font-black uppercase">Rekap Penjualan</p></div>
+                <div onclick="showRekapPanel('KURANG')" class="rekap-icon-btn card p-8 text-center"><i class="fa-solid fa-file-invoice-dollar text-5xl text-orange-500 mb-4"></i><p class="font-black uppercase">Rekap Kurangan</p></div>
+                <div onclick="showRekapPanel('STOK')" class="rekap-icon-btn card p-8 text-center"><i class="fa-solid fa-boxes-stacked text-5xl text-emerald-500 mb-4"></i><p class="font-black uppercase">Stok Saat Ini</p></div>
+            </div>
+            <div id="rekap-panel" class="card p-10 hidden border-2 border-emerald-500 max-w-2xl mx-auto">
+                <div class="flex justify-between items-center mb-6"><h3 id="rekap-title" class="font-black text-emerald-900 uppercase">FILTER REKAP</h3><button onclick="closeRekapPanel()" class="text-red-500 font-black">[TUTUP]</button></div>
+                <div id="filter-waktu" class="grid grid-cols-2 gap-4 mb-4">
+                    <div><label class="text-[10px] font-bold uppercase">Mulai Tanggal</label><input type="date" id="rekap-start" class="input-box"></div>
+                    <div><label class="text-[10px] font-bold uppercase">Sampai Tanggal</label><input type="date" id="rekap-end" class="input-box"></div>
+                </div>
+                <div id="filter-kelas-box" class="mb-6"><label class="text-[10px] font-bold uppercase">Filter Kelas</label><input type="text" id="rekap-kls" placeholder="Contoh: 10A" class="input-box uppercase"></div>
+                <button id="btn-unduh-final" class="w-full btn-primary h-14 uppercase">PROSES EXCEL</button>
+            </div>
+        </div>
+
+        <div id="p-config" class="page-content">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                <div class="card p-8"><h4 class="font-black mb-6 uppercase">Branding & Reset</h4>
+                    <div class="space-y-4"><input type="file" id="cfg-file" class="input-box"><input type="text" id="cfg-nama" placeholder="Nama Sekolah" class="input-box font-bold"><button onclick="saveBranding()" class="w-full btn-primary">Simpan</button><hr>
+                    <button onclick="resetData('STOK')" class="w-full text-red-500 font-bold p-2 hover:bg-red-50 rounded-lg uppercase">Reset Stok & Log</button>
+                    <button onclick="resetData('JUAL')" class="w-full text-red-500 font-bold p-2 hover:bg-red-50 rounded-lg uppercase">Reset Penjualan & Log</button>
+                    <button onclick="resetData('KURANG')" class="w-full text-red-500 font-bold p-2 hover:bg-red-50 rounded-lg uppercase">Reset Kurangan & Log</button></div>
+                </div>
+                <div class="card p-8 admin-only" style="display:none;"><h4 class="font-black mb-6 uppercase">Manajemen Akun Staff</h4><div class="space-y-3 mb-6"><input id="stf-n" class="input-box uppercase" placeholder="Nama User"><input id="stf-p" class="input-box" placeholder="Password"><select id="stf-r" class="input-box"><option value="staff">STAFF</option><option value="admin">ADMIN</option></select><button onclick="addStaff()" class="w-full btn-primary">Tambah Akun</button></div><div class="overflow-x-auto"><table class="w-full text-[10px]"><thead><tr class="text-left bg-slate-50"><th class="p-2 border">USER</th><th class="p-2 border">PASS</th><th class="p-2 border">ROLE</th><th class="p-2 border text-center">X</th></tr></thead><tbody id="staff-list"></tbody></table></div></div>
             </div>
         </div>
     </main>
 
     <script>
+        const firebaseConfig = { apiKey: "AIzaSyDCSogiMCdgb6msGDSOoE4JNG4zwmmM3KU", authDomain: "makhas.firebaseapp.com", databaseURL: "https://makhas-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "makhas", storageBucket: "makhas.firebasestorage.app", messagingSenderId: "567346128312", appId: "1:567346128312:web:cf90618763f7ec31289b4d" };
+        firebase.initializeApp(firebaseConfig);
+        const rdb = firebase.database();
+
+        let db = {}, logs = [], kurangan = [], sales = [], config = {}, users = [], cart = [];
+        let curUser = JSON.parse(sessionStorage.getItem('mk_user')) || null;
+        const itemsMaster = { PUTRA: ["Baju Pramuka Pa", "Baju Putih Pa", "Baju Batik Pa", "Celana Abu", "Celana Hitam", "Celana Pramuka"], PUTRI: ["Baju Pramuka Pi", "Baju Putih Pi", "Baju Batik Pi", "Rok Abu", "Rok Hitam", "Rok Pramuka"] };
         const sizes = ["S", "M", "L", "XL", "XXL", "3XL", "4XL", "5XL"];
-        const items = { 
-            PUTRA: ["Baju Pramuka Pa", "Baju Putih Pa", "Baju Batik Pa", "Celana Abu", "Celana Hitam", "Celana Pramuka"], 
-            PUTRI: ["Baju Pramuka Pi", "Baju Putih Pi", "Baju Batik Pi", "Rok Abu", "Rok Hitam", "Rok Pramuka"] 
-        };
-        
-        const VER = "v13.7";
-        let db = JSON.parse(localStorage.getItem('ma_db_'+VER)) || { PUTRA: {}, PUTRI: {} };
-        let logs = JSON.parse(localStorage.getItem('ma_lg_'+VER)) || [];
-        let kurangan = JSON.parse(localStorage.getItem('ma_kr_'+VER)) || [];
-        let sales = JSON.parse(localStorage.getItem('ma_sl_'+VER)) || [];
-        let config = JSON.parse(localStorage.getItem('ma_cf_'+VER)) || { n: "MA KHAS KEMPEK", t: "Official Store", img: "" };
-        let payType = 'CASH', cart = [], selectedKurang = [], activeExport = '';
 
         function init() {
-            document.getElementById('disp-nama').innerText = config.n;
-            document.getElementById('disp-tag').innerText = config.t;
-            document.getElementById('p-name').value = config.n;
-            document.getElementById('p-tag').value = config.t;
-            if(config.img) document.getElementById('img-display').src = config.img;
-            ['PUTRA', 'PUTRI'].forEach(c => items[c].forEach(i => { if(!db[c][i]) db[c][i] = {}; sizes.forEach(s => { if(db[c][i][s] === undefined) db[c][i][s] = 0; }); }));
-            ['in', 'out', 'man'].forEach(pre => { 
-                const el = document.getElementById(pre + '-cat'); if(el){ el.innerHTML = '<option value="PUTRA">PUTRA</option><option value="PUTRI">PUTRI</option>'; updateItems(pre); }
-                const sz = document.getElementById(pre + '-size'); if(sz) sz.innerHTML = sizes.map(s => `<option value="${s}">${s}</option>`).join('');
+            rdb.ref().on('value', snap => {
+                const v = snap.val() || {};
+                db = v.db || { PUTRA: {}, PUTRI: {} }; logs = v.logs || []; kurangan = v.kurangan || []; sales = v.sales || [];
+                users = v.users || [{name: "MA KHAS", pass: "344381", role: "admin"}];
+                config = v.config || { n: "MA KHAS KEMPEK", i: "https://i.ibb.co/Y7Bv0Yv/logo-ma-khas.png" };
+                if(curUser) document.getElementById('login-overlay').style.display = 'none';
+                refresh();
             });
-            renderMultiItems(); updateDash();
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('date-start').value = today; document.getElementById('date-end').value = today;
+            ['in', 'out', 'kur'].forEach(p => {
+                const cEl = document.getElementById(p+'-cat'); if(cEl) cEl.innerHTML = '<option value="PUTRA">PUTRA</option><option value="PUTRI">PUTRI</option>';
+                const sEl = document.getElementById(p+'-size'); if(sEl) sEl.innerHTML = sizes.map(s => `<option value="${s}">${s}</option>`).join('');
+                updateItems(p);
+            });
         }
 
-        // --- FILTERED EXPORT ---
-        function openExport(type) {
-            activeExport = type;
-            document.getElementById('modal-title').innerText = "REKAP " + type;
-            document.getElementById('modal-filter').style.display = 'flex';
+        function refresh() {
+            document.getElementById('login-img-display').src = config.i; document.getElementById('side-img').src = config.i; document.getElementById('disp-nama').innerText = config.n;
+            if(curUser) { document.getElementById('role-badge').innerText = curUser.role.toUpperCase(); if(curUser.role === 'admin') document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block'); }
+            let t = 0; ['PUTRA','PUTRI'].forEach(c => Object.values(db[c]||{}).forEach(i => Object.values(i).forEach(q => t += (q.q || 0))));
+            document.getElementById('stat-total').innerText = t; document.getElementById('stat-jual').innerText = sales.length; document.getElementById('stat-kurang').innerText = kurangan.length;
+            renderStok(document.getElementById('btn-stok-pi')?.classList.contains('bg-emerald-900') ? 'PUTRI' : 'PUTRA');
+            renderKurangTable(); renderLogs(); checkLive(); renderStaff(); renderPembeliTable();
         }
 
-        function closeModal() { document.getElementById('modal-filter').style.display = 'none'; }
-
-        function processDownload() {
-            const start = new Date(document.getElementById('date-start').value);
-            const end = new Date(document.getElementById('date-end').value);
-            end.setHours(23, 59, 59);
-
-            let data = [], fileName = "";
-
-            if(activeExport === 'PENJUALAN') {
-                data = sales.filter(s => { const d = new Date(s.rawDate); return d >= start && d <= end; })
-                             .map(s => ({ TANGGAL: s.d, JAM: s.t, SISWA: s.n, BARANG: s.i, UKURAN: s.s, BAYAR: s.p }));
-                fileName = `REKAP_PENJUALAN_${document.getElementById('date-start').value}.xlsx`;
-            } else if(activeExport === 'KURANGAN') {
-                data = kurangan.filter(k => { const d = new Date(k.rawDate); return d >= start && d <= end; })
-                               .map(k => ({ TANGGAL_INDEN: k.d, SISWA: k.n, BARANG: k.i, UKURAN: k.s }));
-                fileName = `REKAP_KURANGAN_${document.getElementById('date-start').value}.xlsx`;
-            }
-
-            if(data.length === 0) return alert("Tidak ada data pada tanggal tersebut!");
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), activeExport);
-            XLSX.writeFile(wb, fileName);
-            closeModal();
-        }
-
-        function downloadStok() {
-            let data = [];
-            ['PUTRA','PUTRI'].forEach(c => Object.keys(db[c]).forEach(itm => { 
-                let r = { KATEGORI: c, BARANG: itm }; 
-                sizes.forEach(s => r[s] = db[c][itm][s]); 
-                data.push(r); 
-            }));
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), "STOK_SERAGAM");
-            XLSX.writeFile(wb, `REKAP_STOK_SERAGAM_${new Date().toLocaleDateString()}.xlsx`);
-        }
-
-        // --- CORE ---
-        function addLog(type, user, msg) {
-            logs.unshift({ t: new Date().toLocaleTimeString('id-ID'), d: new Date().toLocaleDateString('id-ID'), rawDate: new Date().toISOString(), type, user, msg });
-            if(logs.length > 50) logs.pop(); save();
-        }
-
-        function prosesJualMulti() {
-            const n = document.getElementById('out-nama').value.toUpperCase(); if(!n) return alert("Isi Nama!");
-            cart.forEach(c => {
-                const itemData = { n, i: c.itm, s: c.sz, d: new Date().toLocaleDateString('id-ID'), t: new Date().toLocaleTimeString('id-ID'), rawDate: new Date().toISOString() };
-                if(c.status === 'READY') { 
-                    db[c.cat][c.itm][c.sz]--; 
-                    sales.push({ ...itemData, p: payType });
-                    addLog('JUAL', n, `Beli ${c.itm} (${c.sz})`);
-                } else { 
-                    kurangan.push(itemData);
-                    addLog('KURANG', n, `Inden ${c.itm} (${c.sz})`);
+        // STRUK REVISI (PENJUALAN & PELUNASAN)
+        function cetakStruk(title, siswa, kelas, items, total, isPelunasan = false) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: [80, 150] });
+            
+            try { doc.addImage(config.i, 'PNG', 32, 5, 15, 15); } catch(e) {}
+            
+            doc.setFontSize(10); doc.text(config.n, 40, 25, { align: 'center' });
+            doc.setFontSize(8); doc.text(isPelunasan ? "STRUK PELUNASAN SERAGAM" : title, 40, 29, { align: 'center' });
+            doc.text("------------------------------------------", 40, 32, { align: 'center' });
+            doc.text(`Siswa   : ${siswa} (${kelas})`, 5, 38);
+            doc.text(`Tgl     : ${new Date().toLocaleDateString('id-ID')}`, 5, 42);
+            doc.text(`Petugas : ${curUser.name}`, 5, 46);
+            doc.text("------------------------------------------", 40, 50, { align: 'center' });
+            
+            let y = 55;
+            items.forEach(it => {
+                doc.text(`${it.i} (${it.s})`, 5, y);
+                // Hanya tampilkan harga jika BUKAN pelunasan
+                if(!isPelunasan) {
+                    doc.text(`Rp ${it.h.toLocaleString()}`, 75, y, { align: 'right' });
                 }
+                y += 5;
             });
-            save(); cart = []; document.getElementById('out-nama').value = ""; renderCart(); checkLive(); alert("Data Tersimpan!");
+            
+            doc.text("------------------------------------------", 40, y+2, { align: 'center' });
+            
+            // Hanya tampilkan total jika BUKAN pelunasan
+            if(!isPelunasan) {
+                doc.setFontSize(10);
+                doc.text(`TOTAL: Rp ${total.toLocaleString()}`, 75, y+8, { align: 'right' });
+                y += 8;
+            }
+            
+            doc.setFontSize(8); doc.text("Terima Kasih", 40, y+8, { align: 'center' });
+            doc.save(`${isPelunasan ? 'LUNAS' : 'JUAL'}_${siswa}.pdf`);
         }
 
-        function lunas(x) {
-            const k = kurangan[x]; if(db[k.c || 'PUTRA'][k.i][k.s] <= 0) return alert("Stok Seragam Kosong!");
-            db[k.c || 'PUTRA'][k.i][k.s]--; 
-            sales.push({ ...k, p: 'PELUNASAN', d: new Date().toLocaleDateString('id-ID'), t: new Date().toLocaleTimeString('id-ID'), rawDate: new Date().toISOString() });
-            addLog('JUAL', k.n, `Lunas ${k.i} (${k.s})`);
-            kurangan.splice(x, 1); save(); renderKurang();
+        function renderPembeliTable() {
+            const q = document.getElementById('pembeli-search').value.toLowerCase();
+            const f = sales.filter(s => s.n.toLowerCase().includes(q) || s.k.toLowerCase().includes(q));
+            document.getElementById('pembeli-list').innerHTML = [...f].reverse().slice(0, 50).map(s => `<tr class="border-b"><td class="p-2 uppercase font-bold">${s.n}</td><td class="p-2 uppercase">${s.k}</td><td class="p-2 text-blue-600">${s.i} (${s.s})</td></tr>`).join('');
         }
 
-        function save() { 
-            localStorage.setItem('ma_db_'+VER, JSON.stringify(db)); 
-            localStorage.setItem('ma_lg_'+VER, JSON.stringify(logs)); 
-            localStorage.setItem('ma_kr_'+VER, JSON.stringify(kurangan)); 
-            localStorage.setItem('ma_sl_'+VER, JSON.stringify(sales)); 
-            localStorage.setItem('ma_cf_'+VER, JSON.stringify(config)); 
-            updateDash(); 
+        function renderKurangTable() {
+            const q = document.getElementById('kurang-search').value.toLowerCase();
+            const f = kurangan.filter(k => k.n.toLowerCase().includes(q) || k.k.toLowerCase().includes(q));
+            document.getElementById('kurang-table').innerHTML = f.map((k) => {
+                const realIdx = kurangan.findIndex(x => x.r === k.r);
+                return `<tr class="border-b"><td class="p-4 font-bold uppercase">${k.n}</td><td class="p-4 uppercase">${k.k}</td><td class="p-4 font-bold text-orange-600 uppercase">${k.i} (${k.s})</td><td class="p-4 text-center"><button onclick="pelunasanKurang(${realIdx})" class="bg-emerald-500 text-white px-3 py-1 rounded-lg text-[10px] uppercase">Lunas</button></td></tr>`
+            }).join('');
         }
 
-        // --- UI UTILS ---
-        function addToCart() { const cat = document.getElementById('out-cat').value, itm = document.getElementById('out-item').value, sz = document.getElementById('out-size').value; cart.push({ cat, itm, sz, status: db[cat][itm][sz] <= 0 ? 'KURANG' : 'READY' }); renderCart(); }
-        function renderCart() { const c = document.getElementById('cart-list'), b = document.getElementById('btn-proses'); b.className = cart.length ? 'w-full bg-emerald-400 text-emerald-950 py-4 rounded-xl font-black uppercase text-[10px] block' : 'hidden'; c.innerHTML = cart.map((i, x) => `<div class="flex justify-between bg-[#042f24] p-3 rounded-xl border border-emerald-800"><div class="text-[10px] font-bold">${i.itm} (${i.sz}) <span class="block text-[8px] ${i.status === 'KURANG' ? 'text-orange-400' : 'text-emerald-400'}">${i.status}</span></div><button onclick="cart.splice(${x},1);renderCart()" class="text-red-400 px-2"><i class="fa-solid fa-trash"></i></button></div>`).join(''); }
-        function submitStok() { const c = document.getElementById('in-cat').value, i = document.getElementById('in-item').value, s = document.getElementById('in-size').value, q = parseInt(document.getElementById('in-qty').value); if(!q) return; db[c][i][s] += q; addLog('MASUK', 'STOK', `+${q} ${i} (${s})`); save(); alert("Stok Seragam Ditambah!"); document.getElementById('in-qty').value = ""; }
-        function renderStok(cat) { const container = document.getElementById('stok-display'); container.innerHTML = ""; Object.keys(db[cat]).forEach(itm => { let grid = sizes.map(s => `<div class="p-2 bg-white border rounded-lg text-center"><p class="text-[8px] font-bold text-slate-400">${s}</p><input type="number" onchange="updStok('${cat}','${itm}','${s}',this.value)" value="${db[cat][itm][s]}" class="w-full text-center font-black text-emerald-900 bg-transparent text-xs"></div>`).join(''); container.innerHTML += `<div class="card p-4 mb-4"><h6 class="font-bold text-[10px] mb-3 uppercase italic">${itm}</h6><div class="grid grid-cols-4 md:grid-cols-8 gap-2">${grid}</div></div>`; }); }
-        function renderKurang() { document.getElementById('kurang-body').innerHTML = kurangan.map((k, x) => `<tr><td class="p-4 uppercase text-[10px]">${k.n}</td><td class="p-4 text-[9px] text-slate-500">${k.i} (${k.s})</td><td class="p-4 text-right"><button onclick="lunas(${x})" class="bg-emerald-600 text-white px-3 py-1 rounded-lg text-[8px] font-bold uppercase">Lunas</button></td></tr>`).join(''); }
-        function updateDash() { let total = 0; ['PUTRA','PUTRI'].forEach(c => Object.keys(db[c]).forEach(i => sizes.forEach(s => total += db[c][i][s]))); document.getElementById('stat-total').innerText = total; document.getElementById('stat-kurang').innerText = kurangan.length; renderLogs(); }
-        function renderLogs() { document.getElementById('activity-log').innerHTML = logs.slice(0, 10).map(l => `<div class="flex items-center gap-3 p-3 bg-white border border-emerald-50 rounded-2xl"><div class="w-2 h-2 rounded-full ${l.type==='MASUK'?'bg-emerald-500':'bg-blue-500'}"></div><div class="flex-1"><h5 class="text-[9px] font-black uppercase">${l.user}</h5><p class="text-[9px] text-slate-500">${l.msg}</p></div></div>`).join(''); }
-        function switchMenu(id) { document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active')); document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active-menu')); document.getElementById('p-'+id).classList.add('active'); if(id !== 'profil') document.getElementById('m-'+id).classList.add('active-menu'); document.getElementById('header-title').innerText = id.toUpperCase(); if(id === 'stok') renderStok('PUTRA'); if(id === 'kurang') renderKurang(); }
-        function renderMultiItems() { const cat = document.getElementById('man-cat').value; document.getElementById('multi-item-container').innerHTML = items[cat].map(i => `<div onclick="toggleChip(this,'${i}')" class="border-2 border-emerald-50 p-2 rounded-lg text-[9px] font-bold cursor-pointer hover:bg-emerald-50">${i}</div>`).join(''); selectedKurang = []; }
-        function toggleChip(el, i) { if(selectedKurang.includes(i)) { selectedKurang = selectedKurang.filter(x => x !== i); el.classList.remove('bg-emerald-600', 'text-white'); } else { selectedKurang.push(i); el.classList.add('bg-emerald-600', 'text-white'); } }
-        function submitKurangMulti() { const n = document.getElementById('man-nama').value.toUpperCase(), c = document.getElementById('man-cat').value, s = document.getElementById('man-size').value; if(!n || selectedKurang.length === 0) return alert("Lengkapi!"); selectedKurang.forEach(itm => { kurangan.push({ n, c, i: itm, s, d: new Date().toLocaleDateString('id-ID'), rawDate: new Date().toISOString() }); addLog('KURANG', n, `Inden: ${itm} (${s})`); }); save(); document.getElementById('man-nama').value = ""; renderMultiItems(); renderKurang(); alert("Selesai!"); }
-        function setPay(t) { payType = t; document.querySelectorAll('.pay-btn').forEach(b => { b.classList.remove('bg-emerald-600','text-white'); b.classList.add('bg-white','text-emerald-600'); }); document.getElementById('pay-'+t.toLowerCase()).classList.add('bg-emerald-600','text-white'); }
-        function updateItems(pre) { const cat = document.getElementById(pre + '-cat').value, el = document.getElementById(pre + '-item'); if(el) el.innerHTML = items[cat].map(i => `<option value="${i}">${i}</option>`).join(''); if(pre === 'out') checkLive(); }
-        function checkLive() { const c = document.getElementById('out-cat').value, i = document.getElementById('out-item').value, s = document.getElementById('out-size').value; document.getElementById('live-stok').innerText = db[c][i][s] || 0; }
-        function updStok(c,i,s,v) { db[c][i][s] = parseInt(v)||0; save(); }
-        function saveProf() { config.n = document.getElementById('p-name').value; config.t = document.getElementById('p-tag').value; save(); alert("Nama Toko Diupdate!"); location.reload(); }
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
-        function uploadFoto(i) { if(i.files && i.files[0]) { const r = new FileReader(); r.onload = (e) => { config.img = e.target.result; document.getElementById('img-display').src = config.img; save(); }; r.readAsDataURL(i.files[0]); } }
-        function resetHanyaStok() { if(confirm("Nol-kan semua stok seragam?")) { ['PUTRA', 'PUTRI'].forEach(c => Object.keys(db[c]).forEach(itm => sizes.forEach(s => db[c][itm][s] = 0))); save(); location.reload(); } }
+        function resetData(key) {
+            if(confirm("Hapus Permanen Data dan Log terkait?")) {
+                if(key === 'STOK') { db = { PUTRA: {}, PUTRI: {} }; logs = logs.filter(l => l.type !== 'STOK'); }
+                else if(key === 'JUAL') { sales = []; logs = logs.filter(l => l.type !== 'JUAL'); }
+                else if(key === 'KURANG') { kurangan = []; logs = logs.filter(l => l.type !== 'KURANG'); }
+                sync(); alert("RESET BERHASIL!");
+            }
+        }
+
+        function showRekapPanel(t) { document.getElementById('rekap-panel').classList.remove('hidden'); document.getElementById('rekap-title').innerText = "FILTER " + t; document.getElementById('filter-waktu').style.display = (t==='STOK'?'none':'grid'); document.getElementById('filter-kelas-box').style.display = (t==='STOK'?'none':'block'); document.getElementById('btn-unduh-final').onclick = () => prosesRekapExcel(t); }
+        function closeRekapPanel() { document.getElementById('rekap-panel').classList.add('hidden'); }
+        function prosesRekapExcel(t) {
+            const start = document.getElementById('rekap-start').value, end = document.getElementById('rekap-end').value, kls = document.getElementById('rekap-kls').value.trim().toUpperCase();
+            let data = [];
+            if(t==='STOK') { ['PUTRA','PUTRI'].forEach(c => Object.keys(db[c]||{}).forEach(i => sizes.forEach(s => data.push({KATEGORI:c, BARANG:i, UKURAN:s, STOK:db[c][i][s]?.q||0, HARGA:db[c][i][s]?.h||0})))); }
+            else {
+                let raw = t==='JUAL' ? sales : kurangan;
+                data = raw.filter(x => {
+                    const p = x.d.split('/'); const itD = new Date(p[2], p[1]-1, p[0]); 
+                    const sD = start ? new Date(start) : null; const eD = end ? new Date(end) : null;
+                    if(sD) sD.setHours(0,0,0,0); if(eD) eD.setHours(23,59,59,999);
+                    return (!sD||itD>=sD) && (!eD||itD<=eD) && (kls===""||x.k.toUpperCase().includes(kls));
+                }).map(x => ({ TANGGAL: x.d, SISWA: x.n, KELAS: x.k, BARANG: x.i, UKURAN: x.s, HARGA: x.h }));
+            }
+            if(data.length===0) return alert("DATA TIDAK ADA!");
+            const ws = XLSX.utils.json_to_sheet(data), wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "REKAP"); XLSX.writeFile(wb, `REKAP_${t}.xlsx`);
+            closeRekapPanel();
+        }
+
+        function cekLogin() { const u = document.getElementById('u-log').value.toUpperCase(), p = document.getElementById('p-log').value; const user = users.find(x => x.name === u && x.pass === p); if(user) { curUser = user; sessionStorage.setItem('mk_user', JSON.stringify(curUser)); location.reload(); } else alert("SALAH!"); }
+        function logout() { sessionStorage.removeItem('mk_user'); location.reload(); }
+        function switchMenu(id) { document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active')); document.getElementById('p-'+id).classList.add('active'); document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active-menu')); document.getElementById('m-'+id).classList.add('active-menu'); document.getElementById('header-title').innerText = id.toUpperCase(); }
+        function updateItems(p) { const c = document.getElementById(p+'-cat').value, el = document.getElementById(p+'-item'); if(el) el.innerHTML = itemsMaster[c].map(i => `<option value="${i}">${i}</option>`).join(''); if(p === 'kur') renderKurangItems(); checkLive(); }
+        function renderStok(c) {
+            document.getElementById('btn-stok-pa').className = c==='PUTRA'?'flex-1 bg-emerald-900 text-white p-4 rounded-2xl font-bold shadow-md':'flex-1 bg-white text-emerald-900 p-4 rounded-2xl font-bold border';
+            document.getElementById('btn-stok-pi').className = c==='PUTRI'?'flex-1 bg-emerald-900 text-white p-4 rounded-2xl font-bold shadow-md':'flex-1 bg-white text-emerald-900 p-4 rounded-2xl font-bold border';
+            document.getElementById('stok-list').innerHTML = itemsMaster[c].map(i => `<div class="card p-6 border"><p class="text-[10px] font-black uppercase text-emerald-900 mb-4">${i}</p><div class="grid grid-cols-4 md:grid-cols-8 gap-2">${sizes.map(s => `<div class="bg-slate-50 p-2 text-center rounded-xl border"><p class="text-[8px] text-slate-400 font-bold">${s}</p><span class="font-bold text-slate-700">${(db[c]?.[i]?.[s]?.q || 0)}</span></div>`).join('')}</div></div>`).join('');
+        }
+        function checkLive() { const c = document.getElementById('out-cat').value, i = document.getElementById('out-item').value, s = document.getElementById('out-size').value; let q = db[c]?.[i]?.[s]?.q || 0, h = db[c]?.[i]?.[s]?.h || 0, inC = cart.filter(x => x.c === c && x.i === i && x.s === s).length; document.getElementById('live-stok').innerText = q - inC; document.getElementById('live-harga').innerText = "Harga: Rp " + h.toLocaleString(); }
+        function addToCart() { if(parseInt(document.getElementById('live-stok').innerText) <= 0) return alert("KOSONG!"); const c = document.getElementById('out-cat').value, i = document.getElementById('out-item').value, s = document.getElementById('out-size').value; cart.push({ c, i, s, h: db[c][i][s].h }); renderCart(); checkLive(); }
+        function renderCart() { document.getElementById('cart-box').classList.toggle('hidden', cart.length === 0); let t = 0; document.getElementById('cart-list').innerHTML = cart.map(v => { t += v.h; return `<div class="flex justify-between p-2 bg-white/10 rounded-lg text-xs"><span>${v.i} (${v.s})</span><b>Rp ${v.h.toLocaleString()}</b></div>`; }).join(''); document.getElementById('cart-total').innerText = "Rp " + t.toLocaleString(); }
+        function prosesJual() { const n = document.getElementById('out-nama').value.toUpperCase(), k = document.getElementById('out-kelas').value.toUpperCase(); if(!n || cart.length === 0) return alert("LENGKAPI!"); let total = 0; cart.forEach(v => { db[v.c][v.i][v.s].q--; total += v.h; sales.push({ n, k, i: v.i, s: v.s, h: v.h, d: new Date().toLocaleDateString('id-ID'), r: new Date().toISOString() }); }); cetakStruk("STRUK PEMBELIAN", n, k, cart, total, false); logs.unshift({ user: curUser.name, type: 'JUAL', msg: `Jual: ${n}`, t: new Date().toLocaleTimeString() }); cart = []; document.getElementById('out-nama').value = ""; document.getElementById('out-kelas').value = ""; sync(); renderCart(); alert("BERHASIL!"); }
+        function submitStok() { const c = document.getElementById('in-cat').value, i = document.getElementById('in-item').value, s = document.getElementById('in-size').value, q = parseInt(document.getElementById('in-qty').value), h = parseInt(document.getElementById('in-harga').value); if(!q || !h) return alert("ISI!"); if(!db[c][i]) db[c][i] = {}; sizes.forEach(sz => { if(!db[c][i][sz]) db[c][i][sz] = {q:0, h:h}; db[c][i][sz].h = h; }); db[c][i][s].q += q; logs.unshift({ user: curUser.name, type: 'STOK', msg: `Masuk: ${i} (${s}) +${q}`, t: new Date().toLocaleTimeString() }); sync(); alert("OK!"); }
+        function renderKurangItems() { const c = document.getElementById('kur-cat').value; document.getElementById('kur-items-grid').innerHTML = itemsMaster[c].map(i => `<div onclick="toggleKur('${i}', this)" class="border p-2 rounded-lg text-[10px] cursor-pointer font-bold uppercase">${i}</div>`).join(''); selKur = []; }
+        let selKur = []; function toggleKur(i, el) { if(selKur.includes(i)) { selKur = selKur.filter(x => x!==i); el.className = "border p-2 rounded-lg text-[10px] cursor-pointer font-bold uppercase"; } else { selKur.push(i); el.className = "bg-orange-600 text-white p-2 rounded-lg text-[10px] cursor-pointer font-bold shadow-md uppercase"; } }
+        function submitKurangMulti() { const n = document.getElementById('kur-nama').value.toUpperCase(), k = document.getElementById('kur-kelas').value.toUpperCase(), s = document.getElementById('kur-size').value, c = document.getElementById('kur-cat').value; if(!n || selKur.length === 0) return alert("LENGKAPI!"); selKur.forEach(i => { const h = db[c]?.[i]?.[s]?.h || 0; kurangan.push({ n, k, i, s, h, c, d: new Date().toLocaleDateString('id-ID'), r: new Date().toISOString() }); }); logs.unshift({ user: curUser.name, type: 'KURANG', msg: `Kurang: ${n}`, t: new Date().toLocaleTimeString() }); sync(); alert("OK!"); document.getElementById('kur-nama').value = ""; document.getElementById('kur-kelas').value = ""; renderKurangItems(); }
+        function pelunasanKurang(idx) { const it = kurangan[idx]; const rS = db[it.c]?.[it.i]?.[it.s]?.q || 0; if(rS <= 0) return alert("STOK KOSONG!"); if(confirm("Lunas & Cetak?")) { db[it.c][it.i][it.s].q--; sales.push({...it, r: new Date().toISOString()}); cetakStruk("STRUK PELUNASAN", it.n, it.k, [{i: it.i, s: it.s, h: it.h}], it.h, true); logs.unshift({ user: curUser.name, type: 'JUAL', msg: `Lunas: ${it.n}`, t: new Date().toLocaleTimeString() }); kurangan.splice(idx, 1); sync(); } }
+        function renderLogs() { const q = document.getElementById('log-search').value.toLowerCase(); const f = logs.filter(l => l.msg.toLowerCase().includes(q)); document.getElementById('activity-log').innerHTML = f.slice(0,20).map(l => `<div class="p-3 bg-slate-50 border rounded-xl text-[10px] flex justify-between"><span><b>${l.user}</b>: ${l.msg}</span><span class="text-slate-400">${l.t}</span></div>`).join(''); }
+        function saveBranding() { const f = document.getElementById('cfg-file').files[0], n = document.getElementById('cfg-nama').value; if(n) config.n = n; if(f) { const r = new FileReader(); r.onload = e => { config.i = e.target.result; sync(); }; r.readAsDataURL(f); } else sync(); alert("OK!"); }
+        function addStaff() { const n = document.getElementById('stf-n').value.toUpperCase(), p = document.getElementById('stf-p').value, r = document.getElementById('stf-r').value; if(!n||!p)return alert("ISI SEMUA!"); users.push({name:n, pass:p, role:r}); sync(); document.getElementById('stf-n').value='';document.getElementById('stf-p').value=''; }
+        function renderStaff() { document.getElementById('staff-list').innerHTML = users.map((u,x) => `<tr class="border-b"> <td class="p-2 border font-bold uppercase">${u.name}</td> <td class="p-2 border font-mono text-blue-600">${u.pass}</td> <td class="p-2 border uppercase text-[8px]">${u.role}</td> <td class="p-2 border text-center">${x===0?'':`<button onclick="if(confirm('Hapus?')){users.splice(${x},1);sync()}" class="text-red-500 font-black">X</button>`}</td></tr>`).join(''); }
+        function sync() { rdb.ref().set({ db, logs, kurangan, sales, config, users }); }
         window.onload = init;
     </script>
 </body>
