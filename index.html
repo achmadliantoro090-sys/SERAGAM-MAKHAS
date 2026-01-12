@@ -13,11 +13,15 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         :root { --primary: #064e3b; --primary-dark: #022c22; --accent: #10b981; --bg-body: #f1f5f9; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg-body); color: #1e293b; margin: 0; overflow-x: hidden; }
-        #login-overlay { position: fixed; inset: 0; background: radial-gradient(circle at top right, #065f46, #022c22); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .login-card { background: rgba(255, 255, 255, 0.95); padding: 40px; border-radius: 32px; width: 100%; max-width: 400px; text-align: center; backdrop-filter: blur(10px); }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-body); color: #1e293b; margin: 0; overflow: hidden; }
+        #login-overlay { position: fixed; inset: 0; z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 20px; background: #000; }
+        .slide-bg { position: absolute; inset: 0; background-size: cover; background-position: center; transition: opacity 1.5s ease-in-out; opacity: 0; }
+        .slide-bg.active { opacity: 1; }
+        .overlay-mask { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); }
+        .login-card { position: relative; z-index: 10; background: rgba(255, 255, 255, 0.9); padding: 40px; border-radius: 32px; width: 100%; max-width: 400px; text-align: center; backdrop-filter: blur(15px); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.3); }
+        #main-app { display: none; } 
         .sidebar { background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%); height: 100vh; width: 260px; position: fixed; left: 0; top: 0; z-index: 1000; }
-        .main-content { margin-left: 260px; padding: 30px; min-height: 100vh; }
+        .main-content { margin-left: 260px; padding: 30px; min-height: 100vh; overflow-y: auto; height: 100vh; }
         .card { background: white; border-radius: 20px; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); }
         .nav-link { display: flex; align-items: center; gap: 12px; padding: 12px 20px; color: #d1fae5; font-size: 14px; font-weight: 500; cursor: pointer; border-radius: 12px; margin: 4px 15px; }
         .active-menu { background: var(--accent) !important; color: white !important; font-weight: 700; }
@@ -26,184 +30,228 @@
         .page-content { display: none; }
         .page-content.active { display: block; animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .rekap-icon-btn { transition: all 0.3s; cursor: pointer; border: 2px solid transparent; }
-        .rekap-icon-btn:hover { border-color: var(--accent); transform: translateY(-5px); background: #f0fdf4; }
-        @media (max-width: 768px) { .sidebar { transform: translateX(-100%); } .main-content { margin-left: 0; padding: 15px; } }
     </style>
 </head>
 <body>
 
     <div id="login-overlay">
+        <div class="slide-bg active" style="background-image: url('https://images.unsplash.com/photo-1456735190827-d1262f71b8a3?q=80&w=2068&auto=format&fit=crop');"></div>
+        <div class="slide-bg" style="background-image: url('https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?q=80&w=1974&auto=format&fit=crop');"></div>
+        <div class="slide-bg" style="background-image: url('https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=2022&auto=format&fit=crop');"></div>
+        <div class="overlay-mask"></div>
         <div class="login-card">
-            <div class="w-20 h-20 bg-white rounded-2xl mx-auto mb-4 p-2 flex items-center justify-center"><img id="login-img-display" src="" class="object-contain max-h-full"></div>
+            <div class="w-20 h-20 bg-white rounded-2xl mx-auto mb-4 p-2 flex items-center justify-center border shadow-sm"><img id="login-img-display" src="" class="object-contain max-h-full"></div>
             <h2 class="text-xl font-black text-emerald-900 mb-6 uppercase tracking-tight">SISTEM DATA SERAGAM</h2>
             <div class="space-y-3">
                 <input id="u-log" type="text" placeholder="USERNAME" class="input-box text-center font-bold uppercase">
                 <input id="p-log" type="password" placeholder="PASSWORD" class="input-box text-center font-bold">
-                <button onclick="cekLogin()" class="w-full btn-primary mt-2">MASUK</button>
+                <button onclick="cekLogin()" class="w-full btn-primary mt-2 shadow-lg shadow-emerald-900/20">MASUK</button>
             </div>
         </div>
     </div>
 
-    <aside class="sidebar flex flex-col">
-        <div class="p-8 text-center">
-            <div class="bg-white/10 p-4 rounded-[30px] mb-4">
-                <img id="side-img" src="" class="w-16 h-16 bg-white rounded-2xl mx-auto mb-3 p-1 object-contain">
-                <h3 id="disp-nama" class="text-white font-extrabold text-[11px] uppercase">...</h3>
-                <span id="role-badge" class="inline-block mt-2 px-3 py-0.5 bg-emerald-400 text-emerald-950 text-[9px] font-black rounded-full uppercase">...</span>
-            </div>
-        </div>
-        <nav class="flex-grow">
-            <div onclick="switchMenu('dashboard')" class="nav-link active-menu" id="m-dashboard"><i class="fa-solid fa-chart-pie"></i> Dashboard</div>
-            <div onclick="switchMenu('stok')" class="nav-link" id="m-stok"><i class="fa-solid fa-boxes-stacked"></i> Stok Seragam</div>
-            <div onclick="switchMenu('beli')" class="nav-link" id="m-beli"><i class="fa-solid fa-plus-circle"></i> Tambah Stok</div>
-            <div onclick="switchMenu('jual')" class="nav-link" id="m-jual"><i class="fa-solid fa-cart-shopping"></i> Penjualan</div>
-            <div onclick="switchMenu('kurang')" class="nav-link" id="m-kurang"><i class="fa-solid fa-clock-rotate-left"></i> Kurangan</div>
-            <div onclick="switchMenu('rekap')" class="nav-link" id="m-rekap"><i class="fa-solid fa-file-invoice"></i> Rekap Data</div>
-            <div onclick="switchMenu('config')" class="nav-link" id="m-config"><i class="fa-solid fa-gear"></i> Pengaturan</div>
-        </nav>
-        <div class="p-6"><div onclick="logout()" class="nav-link text-red-300"><i class="fa-solid fa-power-off"></i> Keluar</div></div>
-    </aside>
-
-    <main class="main-content">
-        <header class="flex justify-between items-center mb-8 bg-white p-6 rounded-[25px] shadow-sm"><h2 id="header-title" class="font-extrabold text-emerald-900 uppercase">DASHBOARD</h2></header>
-
-        <div id="p-dashboard" class="page-content active">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="card p-6 border-l-[6px] border-emerald-500"><p class="text-[10px] font-bold text-slate-400 mb-1">TOTAL STOK</p><h3 id="stat-total" class="text-4xl font-black">0</h3></div>
-                <div class="card p-6 border-l-[6px] border-blue-500"><p class="text-[10px] font-bold text-slate-400 mb-1">PENJUALAN</p><h3 id="stat-jual" class="text-4xl font-black">0</h3></div>
-                <div class="card p-6 border-l-[6px] border-orange-500"><p class="text-[10px] font-bold text-slate-400 mb-1">KURANGAN</p><h3 id="stat-kurang" class="text-4xl font-black">0</h3></div>
-            </div>
-            <div class="card p-8"><input type="text" id="log-search" onkeyup="renderLogs()" placeholder="Cari Log Aktivitas..." class="input-box !py-2 !w-64 !text-xs mb-4"><div id="activity-log" class="space-y-3"></div></div>
-        </div>
-
-        <div id="p-stok" class="page-content">
-            <div class="flex gap-4 mb-8">
-                <button onclick="renderStok('PUTRA')" id="btn-stok-pa" class="flex-1 p-4 rounded-2xl font-bold border uppercase">Putra</button>
-                <button onclick="renderStok('PUTRI')" id="btn-stok-pi" class="flex-1 p-4 rounded-2xl font-bold border uppercase">Putri</button>
-            </div>
-            <div id="stok-list" class="space-y-6"></div>
-        </div>
-
-        <div id="p-beli" class="page-content">
-            <div class="card p-10 max-w-xl mx-auto">
-                <h3 class="font-black mb-8 text-emerald-900 uppercase text-center">Tambah Stok</h3>
-                <div class="space-y-4">
-                    <select id="in-cat" onchange="updateItems('in')" class="input-box font-bold"></select>
-                    <select id="in-item" class="input-box font-semibold"></select>
-                    <div class="grid grid-cols-2 gap-4"><select id="in-size" class="input-box font-bold"></select><input id="in-qty" type="number" placeholder="Jumlah" class="input-box text-center font-bold"></div>
-                    <input id="in-harga" type="number" placeholder="Harga Jual" class="input-box font-black text-xl text-emerald-700">
-                    <button onclick="submitStok()" class="w-full btn-primary h-14 mt-4">SIMPAN</button>
+    <div id="main-app">
+        <aside class="sidebar flex flex-col">
+            <div class="p-8 text-center">
+                <div class="bg-white/10 p-4 rounded-[30px] mb-4">
+                    <img id="side-img" src="" class="w-16 h-16 bg-white rounded-2xl mx-auto mb-3 p-1 object-contain">
+                    <h3 id="disp-nama" class="text-white font-extrabold text-[11px] uppercase">...</h3>
+                    <span id="role-badge" class="inline-block mt-2 px-3 py-0.5 bg-emerald-400 text-emerald-950 text-[9px] font-black rounded-full uppercase">...</span>
                 </div>
             </div>
-        </div>
+            <nav class="flex-grow">
+                <div onclick="switchMenu('dashboard')" class="nav-link active-menu" id="m-dashboard"><i class="fa-solid fa-chart-pie"></i> Dashboard</div>
+                <div onclick="switchMenu('stok')" class="nav-link" id="m-stok"><i class="fa-solid fa-boxes-stacked"></i> Stok Seragam</div>
+                <div onclick="switchMenu('beli')" class="nav-link" id="m-beli"><i class="fa-solid fa-plus-circle"></i> Tambah Stok</div>
+                <div onclick="switchMenu('jual')" class="nav-link" id="m-jual"><i class="fa-solid fa-cart-shopping"></i> Penjualan</div>
+                <div onclick="switchMenu('kurang')" class="nav-link" id="m-kurang"><i class="fa-solid fa-clock-rotate-left"></i> Kurangan</div>
+                <div onclick="switchMenu('rekap')" class="nav-link" id="m-rekap"><i class="fa-solid fa-file-invoice"></i> Rekap Data</div>
+                <div onclick="switchMenu('config')" class="nav-link" id="m-config"><i class="fa-solid fa-gear"></i> Pengaturan</div>
+            </nav>
+            <div class="p-6"><div onclick="logout()" class="nav-link text-red-300"><i class="fa-solid fa-power-off"></i> Keluar</div></div>
+        </aside>
 
-        <div id="p-jual" class="page-content">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                    <div class="card p-8 mb-6">
-                        <div class="grid grid-cols-2 gap-4 mb-4"><input id="out-nama" type="text" placeholder="NAMA SISWA" class="input-box font-bold uppercase"><input id="out-kelas" type="text" placeholder="KELAS" class="input-box font-bold uppercase"></div>
-                        <div class="grid grid-cols-2 gap-4 mb-4"><select id="out-cat" onchange="updateItems('out')" class="input-box font-bold"></select><select id="out-size" onchange="checkLive()" class="input-box font-bold"></select></div>
-                        <select id="out-item" onchange="checkLive()" class="input-box mb-6 font-semibold"></select>
-                        <div class="flex justify-between items-center bg-slate-50 p-6 rounded-2xl border">
-                            <div><p class="text-[10px] text-slate-400 font-bold uppercase">STOK | HARGA</p><span class="text-2xl font-black text-emerald-600"><span id="live-stok">0</span> pcs</span><div id="live-harga" class="text-sm font-bold text-slate-500 mt-1">Rp 0</div></div>
-                            <button onclick="addToCart()" class="btn-primary px-10">+ Keranjang</button>
+        <main class="main-content">
+            <header class="flex justify-between items-center mb-8 bg-white p-6 rounded-[25px] shadow-sm"><h2 id="header-title" class="font-extrabold text-emerald-900 uppercase">DASHBOARD</h2></header>
+
+            <div id="p-dashboard" class="page-content active">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="card p-6 border-l-[6px] border-emerald-500"><p class="text-[10px] font-bold text-slate-400 mb-1">TOTAL STOK</p><h3 id="stat-total" class="text-4xl font-black">0</h3></div>
+                    <div class="card p-6 border-l-[6px] border-blue-500"><p class="text-[10px] font-bold text-slate-400 mb-1">PENJUALAN</p><h3 id="stat-jual" class="text-4xl font-black">0</h3></div>
+                    <div class="card p-6 border-l-[6px] border-orange-500"><p class="text-[10px] font-bold text-slate-400 mb-1">KURANGAN</p><h3 id="stat-kurang" class="text-4xl font-black">0</h3></div>
+                </div>
+                <div class="card p-8"><input type="text" id="log-search" onkeyup="renderLogs()" placeholder="Cari Log..." class="input-box !py-2 !w-64 !text-xs mb-4"><div id="activity-log" class="space-y-3"></div></div>
+            </div>
+
+            <div id="p-jual" class="page-content">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                        <div class="card p-8 mb-6">
+                            <div class="grid grid-cols-2 gap-4 mb-4"><input id="out-nama" type="text" placeholder="NAMA SISWA" class="input-box font-bold uppercase"><input id="out-kelas" type="text" placeholder="KELAS" class="input-box font-bold uppercase"></div>
+                            <div class="grid grid-cols-2 gap-4 mb-4"><select id="out-cat" onchange="updateItems('out')" class="input-box font-bold"></select><select id="out-size" onchange="checkLive()" class="input-box font-bold"></select></div>
+                            <select id="out-item" onchange="checkLive()" class="input-box mb-6 font-semibold"></select>
+                            <div class="flex justify-between items-center bg-slate-50 p-6 rounded-2xl border">
+                                <div><p class="text-[10px] text-slate-400 font-bold uppercase">STOK | HARGA</p><span class="text-2xl font-black text-emerald-600"><span id="live-stok">0</span> pcs</span><div id="live-harga" class="text-sm font-bold text-slate-500 mt-1">Rp 0</div></div>
+                                <button onclick="addToCart()" class="btn-primary px-10">+ Keranjang</button>
+                            </div>
+                        </div>
+                        <div id="cart-box" class="card p-8 bg-emerald-900 text-white hidden">
+                            <div id="cart-list" class="space-y-3 mb-6"></div>
+                            <div class="flex justify-between items-center mb-4 pt-4 border-t border-white/20"><span class="font-bold uppercase">Total:</span><span id="cart-total" class="text-2xl font-black">Rp 0</span></div>
+                            <div class="mb-6">
+                                <label class="text-[10px] font-bold uppercase mb-2 block">Metode Pembayaran:</label>
+                                <select id="out-pay" class="w-full p-3 rounded-xl bg-white text-emerald-900 font-black uppercase">
+                                    <option value="CASH">CASH (TUNAI)</option>
+                                    <option value="APP SIMAK">APP SIMAK</option>
+                                </select>
+                            </div>
+                            <button onclick="prosesJual()" class="w-full bg-emerald-400 text-emerald-950 py-4 rounded-xl font-black uppercase">Selesaikan & Cetak Struk</button>
                         </div>
                     </div>
-                    <div id="cart-box" class="card p-8 bg-emerald-900 text-white hidden">
-                        <div id="cart-list" class="space-y-3 mb-6"></div>
-                        <div class="flex justify-between items-center mb-6 pt-4 border-t border-white/20"><span class="font-bold uppercase">Total:</span><span id="cart-total" class="text-2xl font-black">Rp 0</span></div>
-                        <button onclick="prosesJual()" class="w-full bg-emerald-400 text-emerald-950 py-4 rounded-xl font-black uppercase">Selesaikan & Cetak Struk</button>
+                    <div class="card p-6"><h4 class="font-black mb-4 uppercase text-emerald-900">Pembeli Terakhir</h4><div class="overflow-y-auto max-h-[400px]"><table class="w-full text-[10px]"><tbody id="pembeli-list"></tbody></table></div></div>
+                </div>
+            </div>
+
+            <div id="p-stok" class="page-content"> <div class="flex gap-4 mb-8"> <button onclick="renderStok('PUTRA')" id="btn-stok-pa" class="flex-1 p-4 rounded-2xl font-bold border uppercase">Putra</button> <button onclick="renderStok('PUTRI')" id="btn-stok-pi" class="flex-1 p-4 rounded-2xl font-bold border uppercase">Putri</button> </div> <div id="stok-list" class="space-y-6"></div> </div>
+            <div id="p-beli" class="page-content"> <div class="card p-10 max-w-xl mx-auto"> <h3 class="font-black mb-8 text-emerald-900 uppercase text-center">Tambah Stok</h3> <div class="space-y-4"> <select id="in-cat" onchange="updateItems('in')" class="input-box font-bold"></select> <select id="in-item" class="input-box font-semibold"></select> <div class="grid grid-cols-2 gap-4"> <select id="in-size" class="input-box font-bold"></select> <input id="in-qty" type="number" placeholder="Jumlah" class="input-box text-center font-bold"> </div> <input id="in-harga" type="number" placeholder="Harga Jual" class="input-box font-black text-xl text-emerald-700"> <button onclick="submitStok()" class="w-full btn-primary h-14 mt-4">SIMPAN</button> </div> </div> </div>
+
+            <div id="p-kurang" class="page-content">
+                <div class="card p-8 mb-8 border-t-4 border-orange-500">
+                    <div class="grid grid-cols-2 gap-4 mb-4"><input id="kur-nama" type="text" placeholder="NAMA SISWA" class="input-box font-bold uppercase"><input id="kur-kelas" type="text" placeholder="KELAS" class="input-box font-bold uppercase"></div>
+                    <div class="grid grid-cols-2 gap-4 mb-4"><select id="kur-cat" onchange="updateItems('kur')" class="input-box font-bold"></select><select id="kur-size" class="input-box font-bold"></select></div>
+                    <div id="kur-items-grid" class="flex flex-wrap gap-2 mb-8"></div>
+                    <button onclick="submitKurangMulti()" class="w-full bg-orange-600 text-white py-4 rounded-xl font-black uppercase">Simpan Kurangan</button>
+                </div>
+                <div class="card p-6">
+                    <div class="flex justify-between items-center mb-4"><h4 class="font-black uppercase text-orange-900">Data Kurangan</h4><input type="text" id="kurang-search" onkeyup="renderKurangTable()" placeholder="Cari..." class="input-box !py-1 !text-[10px] !w-48"></div>
+                    <div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="text-slate-400 text-left border-b"><th class="p-4">SISWA</th><th class="p-4">KELAS</th><th class="p-4">BARANG</th><th class="p-4 text-center">AKSI</th></tr></thead><tbody id="kurang-table"></tbody></table></div>
+                </div>
+            </div>
+
+            <div id="p-rekap" class="page-content"> 
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10"> 
+                    <div onclick="showRekapPanel('JUAL')" class="card p-8 text-center cursor-pointer hover:scale-105 transition border-b-4 border-blue-500"><i class="fa-solid fa-cart-arrow-down text-5xl text-blue-500 mb-4"></i><p class="font-black uppercase">Rekap Penjualan</p></div> 
+                    <div onclick="showRekapPanel('KURANG')" class="card p-8 text-center cursor-pointer hover:scale-105 transition border-b-4 border-orange-500"><i class="fa-solid fa-file-invoice-dollar text-5xl text-orange-500 mb-4"></i><p class="font-black uppercase">Rekap Kurangan</p></div> 
+                    <div onclick="showRekapPanel('STOK')" class="card p-8 text-center cursor-pointer hover:scale-105 transition border-b-4 border-emerald-500"><i class="fa-solid fa-boxes-stacked text-5xl text-emerald-500 mb-4"></i><p class="font-black uppercase">Stok Saat Ini</p></div> 
+                </div> 
+                <div id="rekap-panel" class="card p-10 hidden border-2 border-emerald-500 max-w-2xl mx-auto shadow-2xl"> 
+                    <div class="flex justify-between items-center mb-6"><h3 id="rekap-title" class="font-black text-emerald-900 uppercase">FILTER REKAP</h3><button onclick="closeRekapPanel()" class="text-red-500 font-black bg-red-50 px-3 py-1 rounded-lg">TUTUP</button></div> 
+                    <div id="rekap-filter-date" class="grid grid-cols-2 gap-4 mb-4"> 
+                        <div><label class="text-[10px] font-bold text-slate-400 uppercase">Mulai Tanggal</label><input type="date" id="rekap-start" class="input-box"></div> 
+                        <div><label class="text-[10px] font-bold text-slate-400 uppercase">Sampai Tanggal</label><input type="date" id="rekap-end" class="input-box"></div> 
+                    </div> 
+                    <div id="rekap-filter-extra" class="mb-6">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase">Filter Kelas (Opsional)</label>
+                        <input type="text" id="rekap-kls" placeholder="CONTOH: X.01" class="input-box uppercase">
                     </div>
-                </div>
-                <div>
-                    <div class="card p-6 h-full flex flex-col">
-                        <div class="flex justify-between items-center mb-4"><h4 class="font-black uppercase text-emerald-900">Daftar Pembeli</h4><input type="text" id="pembeli-search" onkeyup="renderPembeliTable()" placeholder="Cari..." class="input-box !py-1 !text-[10px] !w-32"></div>
-                        <div class="overflow-y-auto flex-grow max-h-[400px]"><table class="w-full text-[10px]"><thead class="bg-slate-50 sticky top-0"><tr><th class="p-2 text-left">SISWA</th><th class="p-2 text-left">KELAS</th><th class="p-2 text-left">ITEM</th></tr></thead><tbody id="pembeli-list"></tbody></table></div>
-                    </div>
-                </div>
+                    <button id="btn-unduh-final" onclick="unduhExcelProses()" class="w-full btn-primary h-14 uppercase tracking-widest shadow-lg shadow-emerald-900/20">Mulai Proses Excel</button> 
+                </div> 
             </div>
-        </div>
 
-        <div id="p-kurang" class="page-content">
-            <div class="card p-8 mb-8 border-t-4 border-orange-500">
-                <div class="grid grid-cols-2 gap-4 mb-4"><input id="kur-nama" type="text" placeholder="NAMA SISWA" class="input-box font-bold uppercase"><input id="kur-kelas" type="text" placeholder="KELAS" class="input-box font-bold uppercase"></div>
-                <div class="grid grid-cols-2 gap-4 mb-4"><select id="kur-cat" onchange="updateItems('kur')" class="input-box font-bold"></select><select id="kur-size" class="input-box font-bold"></select></div>
-                <div id="kur-items-grid" class="flex flex-wrap gap-2 mb-8"></div>
-                <button onclick="submitKurangMulti()" class="w-full bg-orange-600 text-white py-4 rounded-xl font-black uppercase">Simpan Kurangan</button>
-            </div>
-            <div class="card p-6">
-                <div class="flex justify-between items-center mb-4"><h4 class="font-black uppercase text-orange-900">Data Kurangan</h4><input type="text" id="kurang-search" onkeyup="renderKurangTable()" placeholder="Cari Siswa/Kelas..." class="input-box !py-1 !text-[10px] !w-48"></div>
-                <div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="text-slate-400 text-left border-b"><th class="p-4">SISWA</th><th class="p-4">KELAS</th><th class="p-4">BARANG</th><th class="p-4 text-center">AKSI</th></tr></thead><tbody id="kurang-table"></tbody></table></div>
-            </div>
-        </div>
-
-        <div id="p-rekap" class="page-content">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                <div onclick="showRekapPanel('JUAL')" class="rekap-icon-btn card p-8 text-center"><i class="fa-solid fa-cart-arrow-down text-5xl text-blue-500 mb-4"></i><p class="font-black uppercase">Rekap Penjualan</p></div>
-                <div onclick="showRekapPanel('KURANG')" class="rekap-icon-btn card p-8 text-center"><i class="fa-solid fa-file-invoice-dollar text-5xl text-orange-500 mb-4"></i><p class="font-black uppercase">Rekap Kurangan</p></div>
-                <div onclick="showRekapPanel('STOK')" class="rekap-icon-btn card p-8 text-center"><i class="fa-solid fa-boxes-stacked text-5xl text-emerald-500 mb-4"></i><p class="font-black uppercase">Stok Saat Ini</p></div>
-            </div>
-            <div id="rekap-panel" class="card p-10 hidden border-2 border-emerald-500 max-w-2xl mx-auto">
-                <div class="flex justify-between items-center mb-6"><h3 id="rekap-title" class="font-black text-emerald-900 uppercase">FILTER REKAP</h3><button onclick="closeRekapPanel()" class="text-red-500 font-black">[TUTUP]</button></div>
-                <div id="filter-waktu" class="grid grid-cols-2 gap-4 mb-4">
-                    <div><label class="text-[10px] font-bold uppercase">Mulai Tanggal</label><input type="date" id="rekap-start" class="input-box"></div>
-                    <div><label class="text-[10px] font-bold uppercase">Sampai Tanggal</label><input type="date" id="rekap-end" class="input-box"></div>
+            <div id="p-config" class="page-content">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="card p-8"><h4 class="font-black mb-6 uppercase">Branding & Reset</h4> <div class="space-y-4"><input type="file" id="cfg-file" class="input-box"><input type="text" id="cfg-nama" placeholder="Sekolah" class="input-box font-bold"><button onclick="saveBranding()" class="w-full btn-primary">Simpan</button><hr> <button onclick="resetData('STOK')" class="w-full text-red-500 font-bold p-2 uppercase">Reset Stok</button> <button onclick="resetData('JUAL')" class="w-full text-red-500 font-bold p-2 uppercase">Reset Jual</button> <button onclick="resetData('KURANG')" class="w-full text-red-500 font-bold p-2 uppercase">Reset Kurang</button></div> </div>
+                    <div class="card p-8 admin-only" style="display:none;"><h4 class="font-black mb-6 uppercase">Password Staff</h4><div class="space-y-3 mb-6"><input id="stf-n" class="input-box uppercase" placeholder="Nama"><input id="stf-p" class="input-box" placeholder="Pass"><select id="stf-r" class="input-box"><option value="staff">STAFF</option><option value="admin">ADMIN</option></select><button onclick="addStaff()" class="w-full btn-primary">Tambah</button></div><div class="overflow-x-auto"><table class="w-full text-[10px]"><thead><tr class="bg-slate-50"><th class="p-2 border">USER</th><th class="p-2 border">PASS</th><th class="p-2 border">ROLE</th><th class="p-2 border">X</th></tr></thead><tbody id="staff-list"></tbody></table></div></div>
                 </div>
-                <div id="filter-kelas-box" class="mb-6"><label class="text-[10px] font-bold uppercase">Filter Kelas</label><input type="text" id="rekap-kls" placeholder="Contoh: 10A" class="input-box uppercase"></div>
-                <button id="btn-unduh-final" class="w-full btn-primary h-14 uppercase">PROSES EXCEL</button>
             </div>
-        </div>
-
-        <div id="p-config" class="page-content">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-                <div class="card p-8"><h4 class="font-black mb-6 uppercase">Branding & Reset (LOG TETAP ADA)</h4>
-                    <div class="space-y-4"><input type="file" id="cfg-file" class="input-box"><input type="text" id="cfg-nama" placeholder="Nama Sekolah" class="input-box font-bold"><button onclick="saveBranding()" class="w-full btn-primary">Simpan</button><hr>
-                    <button onclick="resetData('STOK')" class="w-full text-red-500 font-bold p-2 hover:bg-red-50 rounded-lg uppercase">Reset Stok</button>
-                    <button onclick="resetData('JUAL')" class="w-full text-red-500 font-bold p-2 hover:bg-red-50 rounded-lg uppercase">Reset Penjualan</button>
-                    <button onclick="resetData('KURANG')" class="w-full text-red-500 font-bold p-2 hover:bg-red-50 rounded-lg uppercase">Reset Kurangan</button></div>
-                </div>
-                <div class="card p-8 admin-only" style="display:none;"><h4 class="font-black mb-6 uppercase">Manajemen Akun Staff</h4><div class="space-y-3 mb-6"><input id="stf-n" class="input-box uppercase" placeholder="Nama User"><input id="stf-p" class="input-box" placeholder="Password"><select id="stf-r" class="input-box"><option value="staff">STAFF</option><option value="admin">ADMIN</option></select><button onclick="addStaff()" class="w-full btn-primary">Tambah Akun</button></div><div class="overflow-x-auto"><table class="w-full text-[10px]"><thead><tr class="text-left bg-slate-50"><th class="p-2 border">USER</th><th class="p-2 border">PASS</th><th class="p-2 border">ROLE</th><th class="p-2 border text-center">X</th></tr></thead><tbody id="staff-list"></tbody></table></div></div>
-            </div>
-        </div>
-    </main>
+        </main>
+    </div>
 
     <script>
         const firebaseConfig = { apiKey: "AIzaSyDCSogiMCdgb6msGDSOoE4JNG4zwmmM3KU", authDomain: "makhas.firebaseapp.com", databaseURL: "https://makhas-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "makhas", storageBucket: "makhas.firebasestorage.app", messagingSenderId: "567346128312", appId: "1:567346128312:web:cf90618763f7ec31289b4d" };
         firebase.initializeApp(firebaseConfig);
         const rdb = firebase.database();
 
+        function runSlideshow() {
+            let current = 0;
+            const slides = document.querySelectorAll('.slide-bg');
+            setInterval(() => { slides[current].classList.remove('active'); current = (current + 1) % slides.length; slides[current].classList.add('active'); }, 5000);
+        }
+
         let db = {}, logs = [], kurangan = [], sales = [], config = {}, users = [], cart = [];
         let curUser = JSON.parse(sessionStorage.getItem('mk_user')) || null;
+        let activeRekapType = "";
         const itemsMaster = { PUTRA: ["Baju Pramuka Pa", "Baju Putih Pa", "Baju Batik Pa", "Celana Abu", "Celana Hitam", "Celana Pramuka"], PUTRI: ["Baju Pramuka Pi", "Baju Putih Pi", "Baju Batik Pi", "Rok Abu", "Rok Hitam", "Rok Pramuka"] };
         const sizes = ["S", "M", "L", "XL", "XXL", "3XL", "4XL", "5XL"];
 
         function init() {
+            runSlideshow();
             rdb.ref().on('value', snap => {
                 const v = snap.val() || {};
                 db = v.db || { PUTRA: {}, PUTRI: {} }; logs = v.logs || []; kurangan = v.kurangan || []; sales = v.sales || [];
                 users = v.users || [{name: "MA KHAS", pass: "344381", role: "admin"}];
-                config = v.config || { n: "MA KHAS KEMPEK", i: "https://i.ibb.co/Y7Bv0Yv/logo-ma-khas.png" };
-                if(curUser) document.getElementById('login-overlay').style.display = 'none';
+                config = v.config || { n: "MA KHAS KEMPEK", i: "" };
+                if(curUser) { document.getElementById('login-overlay').style.display = 'none'; document.getElementById('main-app').style.display = 'block'; document.body.style.overflow = 'auto'; } 
+                else { document.getElementById('login-overlay').style.display = 'flex'; document.getElementById('main-app').style.display = 'none'; document.body.style.overflow = 'hidden'; }
                 refresh();
             });
             ['in', 'out', 'kur'].forEach(p => {
-                const cEl = document.getElementById(p+'-cat'); if(cEl) cEl.innerHTML = '<option value="PUTRA">PUTRA</option><option value="PUTRI">PUTRI</option>';
-                const sEl = document.getElementById(p+'-size'); if(sEl) sEl.innerHTML = sizes.map(s => `<option value="${s}">${s}</option>`).join('');
+                if(document.getElementById(p+'-cat')) document.getElementById(p+'-cat').innerHTML = '<option value="PUTRA">PUTRA</option><option value="PUTRI">PUTRI</option>';
+                if(document.getElementById(p+'-size')) document.getElementById(p+'-size').innerHTML = sizes.map(s => `<option value="${s}">${s}</option>`).join('');
                 updateItems(p);
             });
         }
 
-        function refresh() {
-            document.getElementById('login-img-display').src = config.i; document.getElementById('side-img').src = config.i; document.getElementById('disp-nama').innerText = config.n;
-            if(curUser) { document.getElementById('role-badge').innerText = curUser.role.toUpperCase(); if(curUser.role === 'admin') document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block'); }
-            let t = 0; ['PUTRA','PUTRI'].forEach(c => Object.values(db[c]||{}).forEach(i => Object.values(i).forEach(q => t += (q.q || 0))));
-            document.getElementById('stat-total').innerText = t; document.getElementById('stat-jual').innerText = sales.length; document.getElementById('stat-kurang').innerText = kurangan.length;
-            renderStok(document.getElementById('btn-stok-pi')?.classList.contains('bg-emerald-900') ? 'PUTRI' : 'PUTRA');
-            renderKurangTable(); renderLogs(); checkLive(); renderStaff(); renderPembeliTable();
+        // --- FUNGSI REKAP (PERBAIKAN LOGIKA TANGGAL) ---
+        function showRekapPanel(t) { 
+            activeRekapType = t;
+            document.getElementById('rekap-panel').classList.remove('hidden'); 
+            document.getElementById('rekap-title').innerText = "REKAP " + t; 
+            document.getElementById('rekap-filter-date').style.display = (t === 'STOK') ? 'none' : 'grid';
+            document.getElementById('rekap-filter-extra').style.display = (t === 'STOK') ? 'none' : 'block';
+        }
+        function closeRekapPanel() { document.getElementById('rekap-panel').classList.add('hidden'); }
+
+        function unduhExcelProses() {
+            const start = document.getElementById('rekap-start').value;
+            const end = document.getElementById('rekap-end').value;
+            const kls = document.getElementById('rekap-kls').value.toUpperCase();
+            
+            let dataFinal = [];
+            let fileName = `REKAP_${activeRekapType}_${new Date().getTime()}.xlsx`;
+
+            // Helper untuk merubah format DD/MM/YYYY menjadi YYYY-MM-DD agar bisa dibandingkan
+            const formatKeISO = (tglStr) => {
+                if(!tglStr) return "";
+                const part = tglStr.split('/');
+                if(part.length !== 3) return "";
+                return `${part[2]}-${part[1].padStart(2, '0')}-${part[0].padStart(2, '0')}`;
+            };
+
+            if (activeRekapType === 'JUAL') {
+                if(!start || !end) return alert("Pilih Rentang Tanggal!");
+                dataFinal = sales.filter(s => {
+                    const tglISO = formatKeISO(s.d);
+                    return tglISO >= start && tglISO <= end && (kls === "" || s.k.includes(kls));
+                }).map(s => ({ "TANGGAL": s.d, "NAMA": s.n, "KELAS": s.k, "BARANG": s.i, "UKURAN": s.s, "HARGA": s.h, "METODE": s.pay }));
+            } else if (activeRekapType === 'KURANG') {
+                if(!start || !end) return alert("Pilih Rentang Tanggal!");
+                dataFinal = kurangan.filter(k => {
+                    const tglISO = formatKeISO(k.d);
+                    return tglISO >= start && tglISO <= end && (kls === "" || k.k.includes(kls));
+                }).map(k => ({ "TANGGAL": k.d, "NAMA": k.n, "KELAS": k.k, "BARANG": k.i, "UKURAN": k.s }));
+            } else if (activeRekapType === 'STOK') {
+                ['PUTRA', 'PUTRI'].forEach(cat => {
+                    itemsMaster[cat].forEach(item => {
+                        sizes.forEach(sz => {
+                            const qty = db[cat]?.[item]?.[sz]?.q || 0;
+                            if(qty > 0) dataFinal.push({ "KATEGORI": cat, "BARANG": item, "UKURAN": sz, "SISA STOK": qty });
+                        });
+                    });
+                });
+            }
+
+            if (dataFinal.length === 0) return alert("Data Tidak Ditemukan pada Filter ini!");
+
+            const ws = XLSX.utils.json_to_sheet(dataFinal);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "DATA");
+            XLSX.writeFile(wb, fileName);
+            alert("Excel Berhasil Diunduh!");
         }
 
-        function cetakStruk(title, siswa, kelas, items, total, isPelunasan = false) {
+        // --- FUNGSI LAINNYA ---
+        function cetakStruk(title, siswa, kelas, items, total, pay = 'CASH', isPelunasan = false) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ unit: 'mm', format: [80, 150] });
             try { doc.addImage(config.i, 'PNG', 32, 5, 15, 15); } catch(e) {}
@@ -212,88 +260,45 @@
             doc.text("------------------------------------------", 40, 32, { align: 'center' });
             doc.text(`Siswa   : ${siswa} (${kelas})`, 5, 38);
             doc.text(`Tgl     : ${new Date().toLocaleDateString('id-ID')}`, 5, 42);
-            doc.text(`Petugas : ${curUser.name}`, 5, 46);
-            doc.text("------------------------------------------", 40, 50, { align: 'center' });
-            let y = 55;
-            items.forEach(it => {
-                doc.text(`${it.i} (${it.s})`, 5, y);
-                if(!isPelunasan) doc.text(`Rp ${it.h.toLocaleString()}`, 75, y, { align: 'right' });
-                y += 5;
-            });
+            doc.text(`Metode  : ${pay}`, 5, 46);
+            doc.text("------------------------------------------", 40, 54, { align: 'center' });
+            let y = 59;
+            items.forEach(it => { doc.text(`${it.i} (${it.s})`, 5, y); if(!isPelunasan) doc.text(`Rp ${it.h.toLocaleString()}`, 75, y, { align: 'right' }); y += 5; });
             doc.text("------------------------------------------", 40, y+2, { align: 'center' });
             if(!isPelunasan) { doc.setFontSize(10); doc.text(`TOTAL: Rp ${total.toLocaleString()}`, 75, y+8, { align: 'right' }); y += 8; }
             doc.setFontSize(8); doc.text("Terima Kasih", 40, y+8, { align: 'center' });
             doc.save(`${isPelunasan ? 'LUNAS' : 'JUAL'}_${siswa}.pdf`);
         }
-
-        function renderPembeliTable() {
-            const q = document.getElementById('pembeli-search').value.toLowerCase();
-            const f = sales.filter(s => s.n.toLowerCase().includes(q) || s.k.toLowerCase().includes(q));
-            document.getElementById('pembeli-list').innerHTML = [...f].reverse().slice(0, 50).map(s => `<tr class="border-b"><td class="p-2 uppercase font-bold">${s.n}</td><td class="p-2 uppercase">${s.k}</td><td class="p-2 text-blue-600">${s.i} (${s.s})</td></tr>`).join('');
-        }
-
-        function renderKurangTable() {
-            const q = document.getElementById('kurang-search').value.toLowerCase();
-            const f = kurangan.filter(k => k.n.toLowerCase().includes(q) || k.k.toLowerCase().includes(q));
-            document.getElementById('kurang-table').innerHTML = f.map((k) => {
-                const realIdx = kurangan.findIndex(x => x.r === k.r);
-                return `<tr class="border-b"><td class="p-4 font-bold uppercase">${k.n}</td><td class="p-4 uppercase">${k.k}</td><td class="p-4 font-bold text-orange-600 uppercase">${k.i} (${k.s})</td><td class="p-4 text-center"><button onclick="pelunasanKurang(${realIdx})" class="bg-emerald-500 text-white px-3 py-1 rounded-lg text-[10px] uppercase">Lunas</button></td></tr>`
-            }).join('');
-        }
-
-        // RESET DATA TANPA MENGHAPUS LOG (KUNCI)
-        function resetData(key) {
-            if(confirm("Apakah Anda yakin ingin mengosongkan data ini? (LOG AKTIVITAS TIDAK AKAN DIHAPUS)")) {
-                if(key === 'STOK') { db = { PUTRA: {}, PUTRI: {} }; logs.unshift({ user: curUser.name, type: 'STOK', msg: `RESET SEMUA DATA STOK`, t: new Date().toLocaleTimeString() }); }
-                else if(key === 'JUAL') { sales = []; logs.unshift({ user: curUser.name, type: 'JUAL', msg: `RESET SEMUA DATA PENJUALAN`, t: new Date().toLocaleTimeString() }); }
-                else if(key === 'KURANG') { kurangan = []; logs.unshift({ user: curUser.name, type: 'KURANG', msg: `RESET SEMUA DATA KURANGAN`, t: new Date().toLocaleTimeString() }); }
-                sync(); alert("DATA BERHASIL DIRESET. LOG TETAP AMAN.");
-            }
-        }
-
-        function showRekapPanel(t) { document.getElementById('rekap-panel').classList.remove('hidden'); document.getElementById('rekap-title').innerText = "FILTER " + t; document.getElementById('filter-waktu').style.display = (t==='STOK'?'none':'grid'); document.getElementById('filter-kelas-box').style.display = (t==='STOK'?'none':'block'); document.getElementById('btn-unduh-final').onclick = () => prosesRekapExcel(t); }
-        function closeRekapPanel() { document.getElementById('rekap-panel').classList.add('hidden'); }
-        function prosesRekapExcel(t) {
-            const start = document.getElementById('rekap-start').value, end = document.getElementById('rekap-end').value, kls = document.getElementById('rekap-kls').value.trim().toUpperCase();
-            let data = [];
-            if(t==='STOK') { ['PUTRA','PUTRI'].forEach(c => Object.keys(db[c]||{}).forEach(i => sizes.forEach(s => data.push({KATEGORI:c, BARANG:i, UKURAN:s, STOK:db[c][i][s]?.q||0, HARGA:db[c][i][s]?.h||0})))); }
-            else {
-                let raw = t==='JUAL' ? sales : kurangan;
-                data = raw.filter(x => {
-                    const p = x.d.split('/'); const itD = new Date(p[2], p[1]-1, p[0]); 
-                    const sD = start ? new Date(start) : null; const eD = end ? new Date(end) : null;
-                    if(sD) sD.setHours(0,0,0,0); if(eD) eD.setHours(23,59,59,999);
-                    return (!sD||itD>=sD) && (!eD||itD<=eD) && (kls===""||x.k.toUpperCase().includes(kls));
-                }).map(x => ({ TANGGAL: x.d, SISWA: x.n, KELAS: x.k, BARANG: x.i, UKURAN: x.s, HARGA: x.h }));
-            }
-            if(data.length===0) return alert("DATA TIDAK ADA!");
-            const ws = XLSX.utils.json_to_sheet(data), wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "REKAP"); XLSX.writeFile(wb, `REKAP_${t}.xlsx`);
-            closeRekapPanel();
-        }
-
-        function cekLogin() { const u = document.getElementById('u-log').value.toUpperCase(), p = document.getElementById('p-log').value; const user = users.find(x => x.name === u && x.pass === p); if(user) { curUser = user; sessionStorage.setItem('mk_user', JSON.stringify(curUser)); location.reload(); } else alert("SALAH!"); }
+        function cekLogin() { const u = document.getElementById('u-log').value.toUpperCase(), p = document.getElementById('p-log').value; const user = users.find(x => x.name === u && x.pass === p); if(user) { curUser = user; sessionStorage.setItem('mk_user', JSON.stringify(curUser)); location.reload(); } else alert("GAGAL!"); }
         function logout() { sessionStorage.removeItem('mk_user'); location.reload(); }
-        function switchMenu(id) { document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active')); document.getElementById('p-'+id).classList.add('active'); document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active-menu')); document.getElementById('m-'+id).classList.add('active-menu'); document.getElementById('header-title').innerText = id.toUpperCase(); }
-        function updateItems(p) { const c = document.getElementById(p+'-cat').value, el = document.getElementById(p+'-item'); if(el) el.innerHTML = itemsMaster[c].map(i => `<option value="${i}">${i}</option>`).join(''); if(p === 'kur') renderKurangItems(); checkLive(); }
-        function renderStok(c) {
-            document.getElementById('btn-stok-pa').className = c==='PUTRA'?'flex-1 bg-emerald-900 text-white p-4 rounded-2xl font-bold shadow-md':'flex-1 bg-white text-emerald-900 p-4 rounded-2xl font-bold border';
-            document.getElementById('btn-stok-pi').className = c==='PUTRI'?'flex-1 bg-emerald-900 text-white p-4 rounded-2xl font-bold shadow-md':'flex-1 bg-white text-emerald-900 p-4 rounded-2xl font-bold border';
-            document.getElementById('stok-list').innerHTML = itemsMaster[c].map(i => `<div class="card p-6 border"><p class="text-[10px] font-black uppercase text-emerald-900 mb-4">${i}</p><div class="grid grid-cols-4 md:grid-cols-8 gap-2">${sizes.map(s => `<div class="bg-slate-50 p-2 text-center rounded-xl border"><p class="text-[8px] text-slate-400 font-bold">${s}</p><span class="font-bold text-slate-700">${(db[c]?.[i]?.[s]?.q || 0)}</span></div>`).join('')}</div></div>`).join('');
+        function sync() { rdb.ref().set({ db, logs, kurangan, sales, config, users }); }
+        function refresh() {
+            document.getElementById('login-img-display').src = config.i; document.getElementById('side-img').src = config.i; document.getElementById('disp-nama').innerText = config.n;
+            if(curUser) { document.getElementById('role-badge').innerText = curUser.role.toUpperCase(); if(curUser.role === 'admin') document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block'); }
+            let t = 0; ['PUTRA','PUTRI'].forEach(c => Object.values(db[c]||{}).forEach(i => Object.values(i).forEach(q => t += (q.q || 0))));
+            document.getElementById('stat-total').innerText = t; document.getElementById('stat-jual').innerText = sales.length; document.getElementById('stat-kurang').innerText = kurangan.length;
+            renderStok(document.getElementById('btn-stok-pi')?.classList.contains('bg-emerald-900') ? 'PUTRI' : 'PUTRA');
+            renderKurangTable(); renderLogs(); checkLive(); renderStaff(); renderPembeliTable();
         }
-        function checkLive() { const c = document.getElementById('out-cat').value, i = document.getElementById('out-item').value, s = document.getElementById('out-size').value; let q = db[c]?.[i]?.[s]?.q || 0, h = db[c]?.[i]?.[s]?.h || 0, inC = cart.filter(x => x.c === c && x.i === i && x.s === s).length; document.getElementById('live-stok').innerText = q - inC; document.getElementById('live-harga').innerText = "Harga: Rp " + h.toLocaleString(); }
+        function switchMenu(id) { document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active')); document.getElementById('p-'+id).classList.add('active'); document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active-menu')); document.getElementById('m-'+id).classList.add('active-menu'); document.getElementById('header-title').innerText = id.toUpperCase(); }
+        function updateItems(p) { const c = document.getElementById(p+'-cat').value; if(document.getElementById(p+'-item')) document.getElementById(p+'-item').innerHTML = itemsMaster[c].map(i => `<option value="${i}">${i}</option>`).join(''); if(p === 'kur') renderKurangItems(); checkLive(); }
+        function renderStok(c) { document.getElementById('btn-stok-pa').className = c==='PUTRA'?'flex-1 bg-emerald-900 text-white p-4 rounded-2xl font-bold shadow-md':'flex-1 bg-white text-emerald-900 p-4 rounded-2xl font-bold border'; document.getElementById('btn-stok-pi').className = c==='PUTRI'?'flex-1 bg-emerald-900 text-white p-4 rounded-2xl font-bold shadow-md':'flex-1 bg-white text-emerald-900 p-4 rounded-2xl font-bold border'; document.getElementById('stok-list').innerHTML = itemsMaster[c].map(i => `<div class="card p-6 border"><p class="text-[10px] font-black uppercase text-emerald-900 mb-4">${i}</p><div class="grid grid-cols-4 md:grid-cols-8 gap-2">${sizes.map(s => `<div class="bg-slate-50 p-2 text-center rounded-xl border"><p class="text-[8px] text-slate-400 font-bold">${s}</p><span class="font-bold text-slate-700">${(db[c]?.[i]?.[s]?.q || 0)}</span></div>`).join('')}</div></div>`).join(''); }
+        function checkLive() { const c = document.getElementById('out-cat').value, i = document.getElementById('out-item').value, s = document.getElementById('out-size').value; let q = db[c]?.[i]?.[s]?.q || 0, h = db[c]?.[i]?.[s]?.h || 0, inC = cart.filter(x => x.c === c && x.i === i && x.s === s).length; document.getElementById('live-stok').innerText = q - inC; document.getElementById('live-harga').innerText = "Rp " + h.toLocaleString(); }
         function addToCart() { if(parseInt(document.getElementById('live-stok').innerText) <= 0) return alert("KOSONG!"); const c = document.getElementById('out-cat').value, i = document.getElementById('out-item').value, s = document.getElementById('out-size').value; cart.push({ c, i, s, h: db[c][i][s].h }); renderCart(); checkLive(); }
         function renderCart() { document.getElementById('cart-box').classList.toggle('hidden', cart.length === 0); let t = 0; document.getElementById('cart-list').innerHTML = cart.map(v => { t += v.h; return `<div class="flex justify-between p-2 bg-white/10 rounded-lg text-xs"><span>${v.i} (${v.s})</span><b>Rp ${v.h.toLocaleString()}</b></div>`; }).join(''); document.getElementById('cart-total').innerText = "Rp " + t.toLocaleString(); }
-        function prosesJual() { const n = document.getElementById('out-nama').value.toUpperCase(), k = document.getElementById('out-kelas').value.toUpperCase(); if(!n || cart.length === 0) return alert("LENGKAPI!"); let total = 0; cart.forEach(v => { db[v.c][v.i][v.s].q--; total += v.h; sales.push({ n, k, i: v.i, s: v.s, h: v.h, d: new Date().toLocaleDateString('id-ID'), r: new Date().toISOString() }); }); cetakStruk("STRUK PEMBELIAN", n, k, cart, total, false); logs.unshift({ user: curUser.name, type: 'JUAL', msg: `Jual: ${n}`, t: new Date().toLocaleTimeString() }); cart = []; document.getElementById('out-nama').value = ""; document.getElementById('out-kelas').value = ""; sync(); renderCart(); alert("BERHASIL!"); }
-        function submitStok() { const c = document.getElementById('in-cat').value, i = document.getElementById('in-item').value, s = document.getElementById('in-size').value, q = parseInt(document.getElementById('in-qty').value), h = parseInt(document.getElementById('in-harga').value); if(!q || !h) return alert("ISI!"); if(!db[c][i]) db[c][i] = {}; sizes.forEach(sz => { if(!db[c][i][sz]) db[c][i][sz] = {q:0, h:h}; db[c][i][sz].h = h; }); db[c][i][s].q += q; logs.unshift({ user: curUser.name, type: 'STOK', msg: `Masuk: ${i} (${s}) +${q}`, t: new Date().toLocaleTimeString() }); sync(); alert("OK!"); }
-        function renderKurangItems() { const c = document.getElementById('kur-cat').value; document.getElementById('kur-items-grid').innerHTML = itemsMaster[c].map(i => `<div onclick="toggleKur('${i}', this)" class="border p-2 rounded-lg text-[10px] cursor-pointer font-bold uppercase">${i}</div>`).join(''); selKur = []; }
-        let selKur = []; function toggleKur(i, el) { if(selKur.includes(i)) { selKur = selKur.filter(x => x!==i); el.className = "border p-2 rounded-lg text-[10px] cursor-pointer font-bold uppercase"; } else { selKur.push(i); el.className = "bg-orange-600 text-white p-2 rounded-lg text-[10px] cursor-pointer font-bold shadow-md uppercase"; } }
-        function submitKurangMulti() { const n = document.getElementById('kur-nama').value.toUpperCase(), k = document.getElementById('kur-kelas').value.toUpperCase(), s = document.getElementById('kur-size').value, c = document.getElementById('kur-cat').value; if(!n || selKur.length === 0) return alert("LENGKAPI!"); selKur.forEach(i => { const h = db[c]?.[i]?.[s]?.h || 0; kurangan.push({ n, k, i, s, h, c, d: new Date().toLocaleDateString('id-ID'), r: new Date().toISOString() }); }); logs.unshift({ user: curUser.name, type: 'KURANG', msg: `Kurang: ${n}`, t: new Date().toLocaleTimeString() }); sync(); alert("OK!"); document.getElementById('kur-nama').value = ""; document.getElementById('kur-kelas').value = ""; renderKurangItems(); }
-        function pelunasanKurang(idx) { const it = kurangan[idx]; const rS = db[it.c]?.[it.i]?.[it.s]?.q || 0; if(rS <= 0) return alert("STOK KOSONG!"); if(confirm("Lunas & Cetak?")) { db[it.c][it.i][it.s].q--; sales.push({...it, r: new Date().toISOString()}); cetakStruk("STRUK PELUNASAN", it.n, it.k, [{i: it.i, s: it.s, h: it.h}], it.h, true); logs.unshift({ user: curUser.name, type: 'JUAL', msg: `Lunas: ${it.n}`, t: new Date().toLocaleTimeString() }); kurangan.splice(idx, 1); sync(); } }
-        function renderLogs() { const q = document.getElementById('log-search').value.toLowerCase(); const f = logs.filter(l => l.msg.toLowerCase().includes(q)); document.getElementById('activity-log').innerHTML = f.slice(0,50).map(l => `<div class="p-3 bg-slate-50 border rounded-xl text-[10px] flex justify-between"><span><b>${l.user}</b>: ${l.msg}</span><span class="text-slate-400">${l.t}</span></div>`).join(''); }
+        function prosesJual() { const n = document.getElementById('out-nama').value.toUpperCase(), k = document.getElementById('out-kelas').value.toUpperCase(), pay = document.getElementById('out-pay').value; if(!n || cart.length === 0) return alert("LENGKAPI!"); let total = 0; cart.forEach(v => { db[v.c][v.i][v.s].q--; total += v.h; sales.push({ n, k, i: v.i, s: v.s, h: v.h, pay, d: new Date().toLocaleDateString('id-ID'), r: new Date().toISOString() }); }); cetakStruk("STRUK PEMBELIAN", n, k, cart, total, pay, false); logs.unshift({ user: curUser.name, type: 'JUAL', msg: `Jual: ${n}`, t: new Date().toLocaleTimeString() }); cart = []; sync(); alert("OK!"); }
+        function pelunasanKurang(idx) { const it = kurangan[idx]; if(db[it.c][it.i][it.s].q <= 0) return alert("KOSONG!"); if(confirm("Lunas?")) { db[it.c][it.i][it.s].q--; sales.push({...it, pay: 'CASH', r: new Date().toISOString()}); cetakStruk("PELUNASAN", it.n, it.k, [{i: it.i, s: it.s, h: it.h}], it.h, 'CASH', true); kurangan.splice(idx,1); sync(); } }
+        function submitStok() { const c = document.getElementById('in-cat').value, i = document.getElementById('in-item').value, s = document.getElementById('in-size').value, q = parseInt(document.getElementById('in-qty').value), h = parseInt(document.getElementById('in-harga').value); if(!q || !h) return alert("ISI!"); if(!db[c][i]) db[c][i] = {}; sizes.forEach(sz => { if(!db[c][i][sz]) db[c][i][sz] = {q:0, h:h}; db[c][i][sz].h = h; }); db[c][i][s].q += q; sync(); alert("OK!"); }
+        function renderLogs() { const q = document.getElementById('log-search').value.toLowerCase(); document.getElementById('activity-log').innerHTML = logs.filter(l => l.msg.toLowerCase().includes(q)).slice(0,50).map(l => `<div class="p-3 bg-white border rounded-xl text-[10px] flex justify-between"><span><b>${l.user}</b>: ${l.msg}</span><span class="text-slate-400">${l.t}</span></div>`).join(''); }
+        function renderStaff() { document.getElementById('staff-list').innerHTML = users.map((u,x) => `<tr class="border-b"><td class="p-2 border uppercase">${u.name}</td><td class="p-2 border">${u.pass}</td><td class="p-2 border uppercase text-[8px]">${u.role}</td><td class="p-2 border text-center">${x===0?'':`<button onclick="users.splice(${x},1);sync()" class="text-red-500">X</button>`}</td></tr>`).join(''); }
         function saveBranding() { const f = document.getElementById('cfg-file').files[0], n = document.getElementById('cfg-nama').value; if(n) config.n = n; if(f) { const r = new FileReader(); r.onload = e => { config.i = e.target.result; sync(); }; r.readAsDataURL(f); } else sync(); alert("OK!"); }
-        function addStaff() { const n = document.getElementById('stf-n').value.toUpperCase(), p = document.getElementById('stf-p').value, r = document.getElementById('stf-r').value; if(!n||!p)return alert("ISI SEMUA!"); users.push({name:n, pass:p, role:r}); sync(); document.getElementById('stf-n').value='';document.getElementById('stf-p').value=''; }
-        function renderStaff() { document.getElementById('staff-list').innerHTML = users.map((u,x) => `<tr class="border-b"> <td class="p-2 border font-bold uppercase">${u.name}</td> <td class="p-2 border font-mono text-blue-600">${u.pass}</td> <td class="p-2 border uppercase text-[8px]">${u.role}</td> <td class="p-2 border text-center">${x===0?'':`<button onclick="if(confirm('Hapus?')){users.splice(${x},1);sync()}" class="text-red-500 font-black">X</button>`}</td></tr>`).join(''); }
-        function sync() { rdb.ref().set({ db, logs, kurangan, sales, config, users }); }
+        function renderPembeliTable() { document.getElementById('pembeli-list').innerHTML = [...sales].reverse().slice(0, 15).map(s => `<tr class="border-b"><td class="p-2 font-bold uppercase text-[10px]">${s.n}</td><td class="p-2 text-[10px]">${s.k}</td><td class="p-2 text-emerald-600 font-bold text-[10px]">${s.pay}</td></tr>`).join(''); }
+        function renderKurangTable() { const f = kurangan.filter(k => k.n.toLowerCase().includes(document.getElementById('kurang-search').value.toLowerCase())); document.getElementById('kurang-table').innerHTML = f.map((k, idx) => `<tr class="border-b"><td class="p-4 font-bold uppercase">${k.n}</td><td class="p-4">${k.k}</td><td class="p-4 font-bold text-orange-600">${k.i} (${k.s})</td><td class="p-4 text-center"><button onclick="pelunasanKurang(${idx})" class="bg-emerald-500 text-white px-3 py-1 rounded-lg text-[10px]">LUNAS</button></td></tr>`).join(''); }
+        function renderKurangItems() { const c = document.getElementById('kur-cat').value; document.getElementById('kur-items-grid').innerHTML = itemsMaster[c].map(i => `<div onclick="toggleKur('${i}', this)" class="border p-2 rounded-lg text-[10px] cursor-pointer font-bold uppercase">${i}</div>`).join(''); selKur = []; }
+        let selKur = []; function toggleKur(i, el) { if(selKur.includes(i)) { selKur = selKur.filter(x => x!==i); el.className = "border p-2 rounded-lg text-[10px] cursor-pointer font-bold uppercase"; } else { selKur.push(i); el.className = "bg-orange-600 text-white p-2 rounded-lg text-[10px] cursor-pointer font-bold uppercase"; } }
+        function submitKurangMulti() { const n = document.getElementById('kur-nama').value.toUpperCase(), k = document.getElementById('kur-kelas').value.toUpperCase(), s = document.getElementById('kur-size').value, c = document.getElementById('kur-cat').value; if(!n || selKur.length === 0) return alert("LENGKAPI!"); selKur.forEach(i => { const h = db[c]?.[i]?.[s]?.h || 0; kurangan.push({ n, k, i, s, h, c, d: new Date().toLocaleDateString('id-ID'), r: new Date().toISOString() }); }); sync(); alert("OK!"); }
+        function addStaff() { const n = document.getElementById('stf-n').value.toUpperCase(), p = document.getElementById('stf-p').value, r = document.getElementById('stf-r').value; if(!n||!p)return alert("ISI!"); users.push({name:n, pass:p, role:r}); sync(); }
+        function resetData(key) { if(confirm("RESET DATA?")) { if(key === 'STOK') db = { PUTRA: {}, PUTRI: {} }; else if(key === 'JUAL') sales = []; else if(key === 'KURANG') kurangan = []; sync(); alert("BERES!"); } }
         window.onload = init;
     </script>
 </body>
