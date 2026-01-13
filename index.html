@@ -178,7 +178,9 @@
             runSlideshow();
             rdb.ref().on('value', snap => {
                 const v = snap.val() || {};
-                db = v.db || { PUTRA: {}, PUTRI: {} }; logs = v.logs || []; kurangan = v.kurangan || []; sales = v.sales || [];
+                db = v.db || { PUTRA: {}, PUTRI: {} }; 
+                if(!db.PUTRA) db.PUTRA = {}; if(!db.PUTRI) db.PUTRI = {};
+                logs = v.logs || []; kurangan = v.kurangan || []; sales = v.sales || [];
                 users = v.users || [{name: "MA KHAS", pass: "344381", role: "admin"}];
                 config = v.config || { n: "MA KHAS KEMPEK", i: "" };
                 if(curUser) { document.getElementById('login-overlay').style.display = 'none'; document.getElementById('main-app').style.display = 'block'; document.body.style.overflow = 'auto'; } 
@@ -192,65 +194,74 @@
             });
         }
 
-        // --- FUNGSI REKAP (PERBAIKAN LOGIKA TANGGAL) ---
-        function showRekapPanel(t) { 
-            activeRekapType = t;
-            document.getElementById('rekap-panel').classList.remove('hidden'); 
-            document.getElementById('rekap-title').innerText = "REKAP " + t; 
-            document.getElementById('rekap-filter-date').style.display = (t === 'STOK') ? 'none' : 'grid';
-            document.getElementById('rekap-filter-extra').style.display = (t === 'STOK') ? 'none' : 'block';
+        // --- FITUR HAPUS STOK PER ITEM ---
+        function hapusStok(cat, item, size) {
+            if(confirm(`Hapus stok ${item} ukuran ${size}?`)) {
+                if(db[cat] && db[cat][item] && db[cat][item][size]) {
+                    db[cat][item][size].q = 0; // Mengosongkan jumlah stok
+                    logs.unshift({ user: curUser.name, type: 'HAPUS', msg: `Hapus Stok: ${item} (${size})`, t: new Date().toLocaleTimeString() });
+                    sync();
+                    alert("STOK BERHASIL DIHAPUS!");
+                }
+            }
         }
-        function closeRekapPanel() { document.getElementById('rekap-panel').classList.add('hidden'); }
 
+        function submitStok() {
+            const c = document.getElementById('in-cat').value; 
+            const i = document.getElementById('in-item').value;
+            const s = document.getElementById('in-size').value;
+            const q = parseInt(document.getElementById('in-qty').value);
+            const h = parseInt(document.getElementById('in-harga').value);
+            if(!q || !h) return alert("HARAP ISI JUMLAH DAN HARGA!");
+            if(!db[c]) db[c] = {};
+            if(!db[c][i]) db[c][i] = {};
+            sizes.forEach(sz => { if(!db[c][i][sz]) db[c][i][sz] = { q: 0, h: h }; db[c][i][sz].h = h; });
+            db[c][i][s].q += q;
+            logs.unshift({ user: curUser.name, type: 'MASUK', msg: `Masuk: ${i} (${s}) +${q}`, t: new Date().toLocaleTimeString() });
+            sync();
+            alert("STOK BERHASIL DITAMBAHKAN!");
+            document.getElementById('in-qty').value = "";
+        }
+
+        function renderStok(c) { 
+            document.getElementById('btn-stok-pa').className = c==='PUTRA'?'flex-1 bg-emerald-900 text-white p-4 rounded-2xl font-bold shadow-md':'flex-1 bg-white text-emerald-900 p-4 rounded-2xl font-bold border'; 
+            document.getElementById('btn-stok-pi').className = c==='PUTRI'?'flex-1 bg-emerald-900 text-white p-4 rounded-2xl font-bold shadow-md':'flex-1 bg-white text-emerald-900 p-4 rounded-2xl font-bold border'; 
+            document.getElementById('stok-list').innerHTML = itemsMaster[c].map(i => `
+                <div class="card p-6 border">
+                    <p class="text-[10px] font-black uppercase text-emerald-900 mb-4">${i}</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+                        ${sizes.map(s => `
+                            <div class="bg-slate-50 p-2 text-center rounded-xl border relative group">
+                                <p class="text-[8px] text-slate-400 font-bold">${s}</p>
+                                <span class="font-bold text-slate-700">${(db[c]?.[i]?.[s]?.q || 0)}</span>
+                                <button onclick="hapusStok('${c}', '${i}', '${s}')" class="absolute -top-1 -right-1 bg-red-500 text-white w-4 h-4 rounded-full text-[8px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join(''); 
+        }
+
+        function showRekapPanel(t) { activeRekapType = t; document.getElementById('rekap-panel').classList.remove('hidden'); document.getElementById('rekap-title').innerText = "REKAP " + t; document.getElementById('rekap-filter-date').style.display = (t === 'STOK') ? 'none' : 'grid'; document.getElementById('rekap-filter-extra').style.display = (t === 'STOK') ? 'none' : 'block'; }
+        function closeRekapPanel() { document.getElementById('rekap-panel').classList.add('hidden'); }
         function unduhExcelProses() {
             const start = document.getElementById('rekap-start').value;
             const end = document.getElementById('rekap-end').value;
             const kls = document.getElementById('rekap-kls').value.toUpperCase();
-            
             let dataFinal = [];
             let fileName = `REKAP_${activeRekapType}_${new Date().getTime()}.xlsx`;
-
-            // Helper untuk merubah format DD/MM/YYYY menjadi YYYY-MM-DD agar bisa dibandingkan
-            const formatKeISO = (tglStr) => {
-                if(!tglStr) return "";
-                const part = tglStr.split('/');
-                if(part.length !== 3) return "";
-                return `${part[2]}-${part[1].padStart(2, '0')}-${part[0].padStart(2, '0')}`;
-            };
-
-            if (activeRekapType === 'JUAL') {
-                if(!start || !end) return alert("Pilih Rentang Tanggal!");
-                dataFinal = sales.filter(s => {
-                    const tglISO = formatKeISO(s.d);
-                    return tglISO >= start && tglISO <= end && (kls === "" || s.k.includes(kls));
-                }).map(s => ({ "TANGGAL": s.d, "NAMA": s.n, "KELAS": s.k, "BARANG": s.i, "UKURAN": s.s, "HARGA": s.h, "METODE": s.pay }));
-            } else if (activeRekapType === 'KURANG') {
-                if(!start || !end) return alert("Pilih Rentang Tanggal!");
-                dataFinal = kurangan.filter(k => {
-                    const tglISO = formatKeISO(k.d);
-                    return tglISO >= start && tglISO <= end && (kls === "" || k.k.includes(kls));
-                }).map(k => ({ "TANGGAL": k.d, "NAMA": k.n, "KELAS": k.k, "BARANG": k.i, "UKURAN": k.s }));
-            } else if (activeRekapType === 'STOK') {
-                ['PUTRA', 'PUTRI'].forEach(cat => {
-                    itemsMaster[cat].forEach(item => {
-                        sizes.forEach(sz => {
-                            const qty = db[cat]?.[item]?.[sz]?.q || 0;
-                            if(qty > 0) dataFinal.push({ "KATEGORI": cat, "BARANG": item, "UKURAN": sz, "SISA STOK": qty });
-                        });
-                    });
-                });
-            }
-
-            if (dataFinal.length === 0) return alert("Data Tidak Ditemukan pada Filter ini!");
-
+            const formatKeISO = (tglStr) => { if(!tglStr) return ""; const part = tglStr.split('/'); if(part.length !== 3) return ""; return `${part[2]}-${part[1].padStart(2, '0')}-${part[0].padStart(2, '0')}`; };
+            if (activeRekapType === 'JUAL') { if(!start || !end) return alert("Pilih Rentang Tanggal!"); dataFinal = sales.filter(s => { const tglISO = formatKeISO(s.d); return tglISO >= start && tglISO <= end && (kls === "" || s.k.includes(kls)); }).map(s => ({ "TANGGAL": s.d, "NAMA": s.n, "KELAS": s.k, "BARANG": s.i, "UKURAN": s.s, "HARGA": s.h, "METODE": s.pay })); } 
+            else if (activeRekapType === 'KURANG') { if(!start || !end) return alert("Pilih Rentang Tanggal!"); dataFinal = kurangan.filter(k => { const tglISO = formatKeISO(k.d); return tglISO >= start && tglISO <= end && (kls === "" || k.k.includes(kls)); }).map(k => ({ "TANGGAL": k.d, "NAMA": k.n, "KELAS": k.k, "BARANG": k.i, "UKURAN": k.s })); } 
+            else if (activeRekapType === 'STOK') { ['PUTRA', 'PUTRI'].forEach(cat => { itemsMaster[cat].forEach(item => { sizes.forEach(sz => { const qty = db[cat]?.[item]?.[sz]?.q || 0; if(qty > 0) dataFinal.push({ "KATEGORI": cat, "BARANG": item, "UKURAN": sz, "SISA STOK": qty }); }); }); }); }
+            if (dataFinal.length === 0) return alert("Data Tidak Ditemukan!");
             const ws = XLSX.utils.json_to_sheet(dataFinal);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "DATA");
             XLSX.writeFile(wb, fileName);
-            alert("Excel Berhasil Diunduh!");
         }
-
-        // --- FUNGSI LAINNYA ---
         function cetakStruk(title, siswa, kelas, items, total, pay = 'CASH', isPelunasan = false) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ unit: 'mm', format: [80, 150] });
@@ -275,20 +286,18 @@
         function refresh() {
             document.getElementById('login-img-display').src = config.i; document.getElementById('side-img').src = config.i; document.getElementById('disp-nama').innerText = config.n;
             if(curUser) { document.getElementById('role-badge').innerText = curUser.role.toUpperCase(); if(curUser.role === 'admin') document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block'); }
-            let t = 0; ['PUTRA','PUTRI'].forEach(c => Object.values(db[c]||{}).forEach(i => Object.values(i).forEach(q => t += (q.q || 0))));
+            let t = 0; ['PUTRA','PUTRI'].forEach(c => { if(db[c]) Object.values(db[c]).forEach(i => { Object.values(i).forEach(q => t += (q.q || 0)); }); });
             document.getElementById('stat-total').innerText = t; document.getElementById('stat-jual').innerText = sales.length; document.getElementById('stat-kurang').innerText = kurangan.length;
             renderStok(document.getElementById('btn-stok-pi')?.classList.contains('bg-emerald-900') ? 'PUTRI' : 'PUTRA');
             renderKurangTable(); renderLogs(); checkLive(); renderStaff(); renderPembeliTable();
         }
         function switchMenu(id) { document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active')); document.getElementById('p-'+id).classList.add('active'); document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active-menu')); document.getElementById('m-'+id).classList.add('active-menu'); document.getElementById('header-title').innerText = id.toUpperCase(); }
         function updateItems(p) { const c = document.getElementById(p+'-cat').value; if(document.getElementById(p+'-item')) document.getElementById(p+'-item').innerHTML = itemsMaster[c].map(i => `<option value="${i}">${i}</option>`).join(''); if(p === 'kur') renderKurangItems(); checkLive(); }
-        function renderStok(c) { document.getElementById('btn-stok-pa').className = c==='PUTRA'?'flex-1 bg-emerald-900 text-white p-4 rounded-2xl font-bold shadow-md':'flex-1 bg-white text-emerald-900 p-4 rounded-2xl font-bold border'; document.getElementById('btn-stok-pi').className = c==='PUTRI'?'flex-1 bg-emerald-900 text-white p-4 rounded-2xl font-bold shadow-md':'flex-1 bg-white text-emerald-900 p-4 rounded-2xl font-bold border'; document.getElementById('stok-list').innerHTML = itemsMaster[c].map(i => `<div class="card p-6 border"><p class="text-[10px] font-black uppercase text-emerald-900 mb-4">${i}</p><div class="grid grid-cols-4 md:grid-cols-8 gap-2">${sizes.map(s => `<div class="bg-slate-50 p-2 text-center rounded-xl border"><p class="text-[8px] text-slate-400 font-bold">${s}</p><span class="font-bold text-slate-700">${(db[c]?.[i]?.[s]?.q || 0)}</span></div>`).join('')}</div></div>`).join(''); }
         function checkLive() { const c = document.getElementById('out-cat').value, i = document.getElementById('out-item').value, s = document.getElementById('out-size').value; let q = db[c]?.[i]?.[s]?.q || 0, h = db[c]?.[i]?.[s]?.h || 0, inC = cart.filter(x => x.c === c && x.i === i && x.s === s).length; document.getElementById('live-stok').innerText = q - inC; document.getElementById('live-harga').innerText = "Rp " + h.toLocaleString(); }
         function addToCart() { if(parseInt(document.getElementById('live-stok').innerText) <= 0) return alert("KOSONG!"); const c = document.getElementById('out-cat').value, i = document.getElementById('out-item').value, s = document.getElementById('out-size').value; cart.push({ c, i, s, h: db[c][i][s].h }); renderCart(); checkLive(); }
         function renderCart() { document.getElementById('cart-box').classList.toggle('hidden', cart.length === 0); let t = 0; document.getElementById('cart-list').innerHTML = cart.map(v => { t += v.h; return `<div class="flex justify-between p-2 bg-white/10 rounded-lg text-xs"><span>${v.i} (${v.s})</span><b>Rp ${v.h.toLocaleString()}</b></div>`; }).join(''); document.getElementById('cart-total').innerText = "Rp " + t.toLocaleString(); }
         function prosesJual() { const n = document.getElementById('out-nama').value.toUpperCase(), k = document.getElementById('out-kelas').value.toUpperCase(), pay = document.getElementById('out-pay').value; if(!n || cart.length === 0) return alert("LENGKAPI!"); let total = 0; cart.forEach(v => { db[v.c][v.i][v.s].q--; total += v.h; sales.push({ n, k, i: v.i, s: v.s, h: v.h, pay, d: new Date().toLocaleDateString('id-ID'), r: new Date().toISOString() }); }); cetakStruk("STRUK PEMBELIAN", n, k, cart, total, pay, false); logs.unshift({ user: curUser.name, type: 'JUAL', msg: `Jual: ${n}`, t: new Date().toLocaleTimeString() }); cart = []; sync(); alert("OK!"); }
         function pelunasanKurang(idx) { const it = kurangan[idx]; if(db[it.c][it.i][it.s].q <= 0) return alert("KOSONG!"); if(confirm("Lunas?")) { db[it.c][it.i][it.s].q--; sales.push({...it, pay: 'CASH', r: new Date().toISOString()}); cetakStruk("PELUNASAN", it.n, it.k, [{i: it.i, s: it.s, h: it.h}], it.h, 'CASH', true); kurangan.splice(idx,1); sync(); } }
-        function submitStok() { const c = document.getElementById('in-cat').value, i = document.getElementById('in-item').value, s = document.getElementById('in-size').value, q = parseInt(document.getElementById('in-qty').value), h = parseInt(document.getElementById('in-harga').value); if(!q || !h) return alert("ISI!"); if(!db[c][i]) db[c][i] = {}; sizes.forEach(sz => { if(!db[c][i][sz]) db[c][i][sz] = {q:0, h:h}; db[c][i][sz].h = h; }); db[c][i][s].q += q; sync(); alert("OK!"); }
         function renderLogs() { const q = document.getElementById('log-search').value.toLowerCase(); document.getElementById('activity-log').innerHTML = logs.filter(l => l.msg.toLowerCase().includes(q)).slice(0,50).map(l => `<div class="p-3 bg-white border rounded-xl text-[10px] flex justify-between"><span><b>${l.user}</b>: ${l.msg}</span><span class="text-slate-400">${l.t}</span></div>`).join(''); }
         function renderStaff() { document.getElementById('staff-list').innerHTML = users.map((u,x) => `<tr class="border-b"><td class="p-2 border uppercase">${u.name}</td><td class="p-2 border">${u.pass}</td><td class="p-2 border uppercase text-[8px]">${u.role}</td><td class="p-2 border text-center">${x===0?'':`<button onclick="users.splice(${x},1);sync()" class="text-red-500">X</button>`}</td></tr>`).join(''); }
         function saveBranding() { const f = document.getElementById('cfg-file').files[0], n = document.getElementById('cfg-nama').value; if(n) config.n = n; if(f) { const r = new FileReader(); r.onload = e => { config.i = e.target.result; sync(); }; r.readAsDataURL(f); } else sync(); alert("OK!"); }
